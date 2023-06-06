@@ -72,9 +72,11 @@ def main():
     path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
     path_output = os.path.abspath(arguments.o)
 
-    matrices = pd.read_csv(path_results_clbp, header=None)
-    print(matrices)
-    plt.imshow(matrices)
+    matrices_clbp = pd.read_csv(path_results_clbp, header=None)
+    matrices_con = pd.read_csv(path_results_con, header=None)
+
+
+    plt.imshow(matrices_con, cmap='bwr')
     plt.show()
 
 
