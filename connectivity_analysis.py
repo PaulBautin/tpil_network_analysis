@@ -10,12 +10,13 @@ from __future__ import division
 # ---------------------------------------------------------------------------------------
 # Authors: Marc Antoine
 #
+# Prerequis: environnement virtuel avec python, pandas, numpy et matplotlib (env_tpil)
+#
 #########################################################################################
 
 
 # Parser
 #########################################################################################
-
 
 
 import pandas as pd
@@ -38,13 +39,13 @@ def get_parser():
         "-clbp",
         required=True,
         default='connectivity_results',
-        help='Path to folder that contains output .xlsx files (e.g. "22-07-13_tractometry_CLBP/Statistics")',
+        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
     )
     mandatory.add_argument(
         "-con",
         required=True,
         default='connectivity_results',
-        help='Path to folder that contains output .xlsx files (e.g. "22-07-13_tractometry_CON/Statistics")',
+        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
     )
     optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
     optional.add_argument(
