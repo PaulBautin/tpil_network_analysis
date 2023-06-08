@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 def get_parser():
     """parser function"""
     parser = argparse.ArgumentParser(
-        description="Compute statistics based on the .xlsx files containing the tractometry metrics:",
+        description="Compute statistics based on the .csv files containing the tractometry metrics:",
         formatter_class=argparse.RawTextHelpFormatter,
         prog=os.path.basename(__file__).strip(".py")
     )
