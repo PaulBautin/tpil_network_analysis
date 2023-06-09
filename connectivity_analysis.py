@@ -64,10 +64,10 @@ def get_parser():
 def z_score(df_con, df_clbp):
 
     df_con_mean = df_con.groupby("roi").mean()
-    print(df_con_mean)
+    #print(df_con_mean)
     
     df_con_std = df_con.groupby("roi").std()
-    df_clbp = df_clbp.set_index(["roi"])
+    df_clbp = df_clbp.set_index(["r oi"])
     df_abnor = df_clbp.subtract(df_con_mean, level="participant_id")
     print(df_abnor)
 
@@ -85,15 +85,9 @@ def find_files_with_common_name(directory, common_name):
     dict_paths = {os.path.basename(os.path.dirname(os.path.dirname(file_paths[i]))) : pd.read_csv(file_paths[i], header=None) for i in n}
     df_paths = pd.concat(dict_paths)
     df_paths = df_paths.reset_index().rename(columns={'level_0': 'participant_id', 'level_1': 'roi'})
-
+    df_paths = df_paths[df_paths['participant_id'].str.contains('_ses-v1')]
+    df_paths[['subject', 'session']] = df_paths['participant_id'].str.rsplit('_ses-', 1, expand=True)
     return df_paths
-
-
-def find_files_with_common_visit(directory, common_name):
-
-    visit_paths = glob.glob(directory + '/' + common_name)
-    n = range(len(visit_paths))
-    print(n)
     
     
 def main():
@@ -109,7 +103,7 @@ def main():
 
     df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
-
+    
     z_score(df_con, df_clbp) 
     
 
