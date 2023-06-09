@@ -62,6 +62,7 @@ def get_parser():
     return parser
 
 def z_score(df_con, df_clbp):
+
     df_con_mean = df_con.groupby("roi").mean()
     print(df_con_mean)
     
@@ -69,21 +70,30 @@ def z_score(df_con, df_clbp):
     df_clbp = df_clbp.set_index(["roi"])
     df_abnor = df_clbp.subtract(df_con_mean, level="participant_id")
     print(df_abnor)
+
     df_abnor_mean = df_abnor.groupby("roi").mean()
+
     # for clbp in df_clbp:
     #     z = (clbp - np.mean(df_con)) / np.std(df_con)
     # print(np.mean(z))
 
 
 def find_files_with_common_name(directory, common_name):
+
     file_paths = glob.glob(directory + '/*/Compute_Connectivity/' + common_name)
     n = range(len(file_paths))
-    
     dict_paths = {os.path.basename(os.path.dirname(os.path.dirname(file_paths[i]))) : pd.read_csv(file_paths[i], header=None) for i in n}
     df_paths = pd.concat(dict_paths)
     df_paths = df_paths.reset_index().rename(columns={'level_0': 'participant_id', 'level_1': 'roi'})
+
     return df_paths
-    
+
+
+def find_files_with_common_visit(directory, common_name):
+
+    visit_paths = glob.glob(directory + '/' + common_name)
+    n = range(len(visit_paths))
+    print(n)
     
     
 def main():
@@ -102,8 +112,6 @@ def main():
 
     z_score(df_con, df_clbp) 
     
-
-
 
     #plt.imshow(matrices_con, cmap='bwr')
     #plt.show()
