@@ -23,6 +23,8 @@ import pandas as pd
 import numpy as np
 import os
 import argparse
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import glob
 
@@ -65,9 +67,9 @@ def z_score(df_con, df_clbp):
     df_con_mean = df_con.groupby("roi").mean()
     df_con_std = df_con.groupby("roi").std()
     df_clbp = df_clbp.set_index(["subject","roi"])
-    df_anor = df_clbp - df_con_mean / df_con_std
+    df_anor = (df_clbp - df_con_mean) / df_con_std
     df_anor_mean = df_anor.groupby("roi").mean()
-    return df_anor
+    return df_anor_mean
 
 
 
@@ -103,9 +105,9 @@ def main():
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
     
 
-    #plt.imshow(matrices_con, cmap='bwr')
-    #plt.show()
-    #print(matrices_clbp)
+    plt.imshow(df_z_score_v1, cmap='viridis')
+    plt.show()
+    print(df_z_score_v1)
 
 if __name__ == "__main__":
     main()
