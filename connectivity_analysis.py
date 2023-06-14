@@ -26,6 +26,7 @@ import argparse
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import glob
 
 
@@ -67,10 +68,20 @@ def z_score(df_con, df_clbp):
     df_con_mean = df_con.groupby("roi").mean()
     df_con_std = df_con.groupby("roi").std()
     df_clbp = df_clbp.set_index(["subject","roi"])
+    df_clbp_mean = df_clbp.groupby("roi").mean()
     df_anor = (df_clbp - df_con_mean) / df_con_std
     df_anor_mean = df_anor.groupby("roi").mean()
     return df_anor_mean
 
+def binary_mask(df_z_score_v1):
+    #df_abs_matrix = df_z_score_v1.groupby("roi").abs()
+    #threshold = 2
+    #df_binary_matrix = df_abs_matrix.groupby("roi").where(df_abs_matrix >= threshold, 1, 0)
+    df_abs_matrix = np.abs(df_z_score_v1)
+    threshold = 2
+    df_binary_matrix = np.where(df_abs_matrix >= threshold, 1, 0)
+    print(df_binary_matrix)
+    return df_binary_matrix
 
 
 def find_files_with_common_name(directory, common_name):
@@ -103,12 +114,14 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
+    df_binary_z_score_v1 = binary_mask(df_z_score_v1)
     
-
-    plt.imshow(df_z_score_v1, cmap='viridis')
-    plt.show()
-    print(df_z_score_v1)
-
+    #print(df_z_score_v1)
+    #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
+    #plt.colorbar()
+    #plt.show()
+    
+    
 if __name__ == "__main__":
     main()
 
