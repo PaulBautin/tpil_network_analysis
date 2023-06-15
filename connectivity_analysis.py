@@ -80,9 +80,34 @@ def binary_mask(df_z_score_v1):
     df_abs_matrix = np.abs(df_z_score_v1)
     threshold = 2
     df_binary_matrix = np.where(df_abs_matrix >= threshold, 1, 0)
-    print(df_binary_matrix)
-    return df_binary_matrix
+    df_upper_binary_matrix = np.triu(df_binary_matrix)
+    return df_upper_binary_matrix
 
+def circle(df_binary_z_score_v1):
+    A = df_binary_z_score_v1
+    N = A.shape[0]
+    # x/y coordinates of nodes in a circular layout
+    r = 1
+    theta = np.linspace(0, 2 * np.pi, N, endpoint=False)
+    xy = np.column_stack((r * np.cos(theta), r * np.sin(theta)))
+    # labels of nodes
+    txt = [f"{i+1:03d}" for i in range(N)]
+    # show nodes and edges
+    df_graph = (plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker=".", markersize=15, color="g"))
+    #plt.hold(True)
+    for i in range(N):
+        for j in range(i + 1, N):
+            if A[i, j] == 1:
+                plt.plot([xy[i, 0], xy[j, 0]], [xy[i, 1], xy[j, 1]], "b-")
+
+    plt.axis([-1, 1, -1, 1])
+    plt.axis("equal")
+    plt.axis("off")
+    #plt.hold(False)
+    # show node labels
+    for i in range(N):
+        plt.text(xy[i, 0] * 1.05, xy[i, 1] * 1.05, txt[i], fontsize=8, rotation=theta[i] * 180 / np.pi)
+    return df_graph
 
 def find_files_with_common_name(directory, common_name):
 
@@ -114,9 +139,11 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
+
     df_binary_z_score_v1 = binary_mask(df_z_score_v1)
+    df_graph_z_score_v1 = circle(df_binary_z_score_v1)
     
-    #print(df_z_score_v1)
+    plt.show()
     #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
     #plt.colorbar()
     #plt.show()
