@@ -78,8 +78,9 @@ def binary_mask(df_z_score_v1):
     #threshold = 2
     #df_binary_matrix = df_abs_matrix.groupby("roi").where(df_abs_matrix >= threshold, 1, 0)
     df_abs_matrix = np.abs(df_z_score_v1)
-    threshold = 2
-    df_binary_matrix = np.where(df_abs_matrix >= threshold, 1, 0)
+    #threshold, upper, lower = 20, 1, 0
+    df_binary_matrix = (df_abs_matrix > 20.0).astype(np.int_)
+    #np.where(df_abs_matrix > threshold, upper, lower)
     df_upper_binary_matrix = np.triu(df_binary_matrix)
     return df_upper_binary_matrix
 
@@ -114,6 +115,9 @@ def find_files_with_common_name(directory, common_name):
     file_paths = glob.glob(directory + '/*/Compute_Connectivity/' + common_name)
     n = range(len(file_paths))
     dict_paths = {os.path.basename(os.path.dirname(os.path.dirname(file_paths[i]))) : pd.read_csv(file_paths[i], header=None) for i in n}
+     # Remove last 3 columns and rows from each matrix
+    for key in dict_paths:
+        dict_paths[key] = dict_paths[key].iloc[:-3, :-3]
     df_paths = pd.concat(dict_paths)
     df_paths = df_paths.reset_index().rename(columns={'level_0': 'participant_id', 'level_1': 'roi'})
     # df_paths = df_paths[df_paths['participant_id'].str.contains('_ses-v1')]
@@ -144,11 +148,10 @@ def main():
     df_graph_z_score_v1 = circle(df_binary_z_score_v1)
     
     plt.show()
-    #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
-    #plt.colorbar()
-    #plt.show()
+    plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
+    plt.colorbar()
+    plt.show()
     
     
 if __name__ == "__main__":
     main()
-
