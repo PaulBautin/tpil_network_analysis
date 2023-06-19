@@ -64,28 +64,28 @@ def get_parser():
     )
     return parser
 
-def z_score(df_con, df_clbp):
-    df_con_mean = df_con.groupby("roi").mean()
-    df_con_std = df_con.groupby("roi").std()
-    df_clbp = df_clbp.set_index(["subject","roi"])
-    df_clbp_mean = df_clbp.groupby("roi").mean()
+def mean_matrix(connectivity_matrix):
+    mean_matrix = connectivity_matrix.groupby("roi").mean()
+    return mean_matrix
+
+def z_score(df_con_v1, df_clbp_v1):
+    #df_con_mean = df_con_v1.groupby("roi").mean()
+    df_con_mean = mean_matrix(df_con_v1)
+    df_con_std = df_con_v1.groupby("roi").std()
+    df_clbp = df_clbp_v1.set_index(["subject","roi"])
     df_anor = (df_clbp - df_con_mean) / df_con_std
     df_anor_mean = df_anor.groupby("roi").mean()
     return df_anor_mean
 
-def binary_mask(df_z_score_v1):
-    #df_abs_matrix = df_z_score_v1.groupby("roi").abs()
-    #threshold = 2
-    #df_binary_matrix = df_abs_matrix.groupby("roi").where(df_abs_matrix >= threshold, 1, 0)
-    df_abs_matrix = np.abs(df_z_score_v1)
-    #threshold, upper, lower = 20, 1, 0
-    df_binary_matrix = (df_abs_matrix > 20.0).astype(np.int_)
+def binary_mask(connectivity_matrix):
+    df_abs_matrix = np.abs(connectivity_matrix)
+    df_binary_matrix = (df_abs_matrix > 5).astype(np.int_)
     #np.where(df_abs_matrix > threshold, upper, lower)
     df_upper_binary_matrix = np.triu(df_binary_matrix)
     return df_upper_binary_matrix
 
-def circle(df_binary_z_score_v1):
-    A = df_binary_z_score_v1
+def circle(connectivity_matrix):
+    A = connectivity_matrix
     N = A.shape[0]
     # x/y coordinates of nodes in a circular layout
     r = 1
@@ -95,7 +95,6 @@ def circle(df_binary_z_score_v1):
     txt = [f"{i+1:03d}" for i in range(N)]
     # show nodes and edges
     df_graph = (plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker=".", markersize=15, color="g"))
-    #plt.hold(True)
     for i in range(N):
         for j in range(i + 1, N):
             if A[i, j] == 1:
@@ -104,7 +103,6 @@ def circle(df_binary_z_score_v1):
     plt.axis([-1, 1, -1, 1])
     plt.axis("equal")
     plt.axis("off")
-    #plt.hold(False)
     # show node labels
     for i in range(N):
         plt.text(xy[i, 0] * 1.05, xy[i, 1] * 1.05, txt[i], fontsize=8, rotation=theta[i] * 180 / np.pi)
@@ -146,11 +144,21 @@ def main():
 
     df_binary_z_score_v1 = binary_mask(df_z_score_v1)
     df_graph_z_score_v1 = circle(df_binary_z_score_v1)
-    
-    plt.show()
-    plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
-    plt.colorbar()
-    plt.show()
+    #plt.show()
+
+    df_con_mean = mean_matrix(df_con_v1)
+    df_binary_con = binary_mask(df_con_mean)
+    df_graph_con = circle(df_binary_con)
+    #plt.show()
+
+    df_clbp_mean = mean_matrix(df_clbp_v1)
+    df_binary_clbp = binary_mask(df_clbp_mean)
+    df_graph_clbp = circle(df_binary_clbp)
+    #plt.show()
+
+    #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
+    #plt.colorbar()
+    #plt.show()
     
     
 if __name__ == "__main__":
