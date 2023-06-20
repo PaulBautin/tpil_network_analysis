@@ -22,7 +22,9 @@ from __future__ import division
 import pandas as pd
 import numpy as np
 import os
+import networkx as nx
 import argparse
+import seaborn as sns
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -79,7 +81,7 @@ def z_score(df_con_v1, df_clbp_v1):
 
 def binary_mask(connectivity_matrix):
     df_abs_matrix = np.abs(connectivity_matrix)
-    df_binary_matrix = (df_abs_matrix > 5).astype(np.int_)
+    df_binary_matrix = (df_abs_matrix > 10).astype(np.int_)
     #np.where(df_abs_matrix > threshold, upper, lower)
     df_upper_binary_matrix = np.triu(df_binary_matrix)
     return df_upper_binary_matrix
@@ -92,7 +94,13 @@ def circle(connectivity_matrix):
     theta = np.linspace(0, 2 * np.pi, N, endpoint=False)
     xy = np.column_stack((r * np.cos(theta), r * np.sin(theta)))
     # labels of nodes
-    txt = [f"{i+1:03d}" for i in range(N)]
+    numbers = [f"{i+1:03d}" for i in range(N)]
+    names = []
+    with open('/home/mafor/dev_tpil/tpil_network_analysis/data/Brainnetome atlas.txt', 'r') as fp:
+        for line in fp:
+            x = line[:-1]
+            names.append(x)
+    txt = [f"{name}:{number}" for name, number in zip(names, numbers)]
     # show nodes and edges
     df_graph = (plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker=".", markersize=15, color="g"))
     for i in range(N):
@@ -105,7 +113,7 @@ def circle(connectivity_matrix):
     plt.axis("off")
     # show node labels
     for i in range(N):
-        plt.text(xy[i, 0] * 1.05, xy[i, 1] * 1.05, txt[i], fontsize=8, rotation=theta[i] * 180 / np.pi)
+        plt.text(xy[i, 0] * 1.05, xy[i, 1] * 1.05, txt[i], fontsize=4, rotation=theta[i] * 180 / np.pi)
     return df_graph
 
 def find_files_with_common_name(directory, common_name):
@@ -140,18 +148,22 @@ def main():
 
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
+    
+    
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
-
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_z_score_v1, fmt='%1.3f')
     df_binary_z_score_v1 = binary_mask(df_z_score_v1)
     df_graph_z_score_v1 = circle(df_binary_z_score_v1)
     #plt.show()
 
     df_con_mean = mean_matrix(df_con_v1)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_mean.txt', df_con_mean, fmt='%1.3f')
     df_binary_con = binary_mask(df_con_mean)
     df_graph_con = circle(df_binary_con)
     #plt.show()
 
     df_clbp_mean = mean_matrix(df_clbp_v1)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_mean.txt', df_clbp_mean, fmt='%1.3f')
     df_binary_clbp = binary_mask(df_clbp_mean)
     df_graph_clbp = circle(df_binary_clbp)
     #plt.show()
