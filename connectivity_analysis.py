@@ -71,12 +71,11 @@ def mean_matrix(connectivity_matrix):
     return mean_matrix
 
 def z_score(df_con_v1, df_clbp_v1):
-    #df_con_mean = df_con_v1.groupby("roi").mean()
     df_con_mean = mean_matrix(df_con_v1)
     df_con_std = df_con_v1.groupby("roi").std()
     df_clbp = df_clbp_v1.set_index(["subject","roi"])
     df_anor = (df_clbp - df_con_mean) / df_con_std
-    df_anor_mean = df_anor.groupby("roi").mean()
+    df_anor_mean = mean_matrix(df_anor)
     return df_anor_mean
 
 def graph_matrix(connectivity_matrix):
@@ -90,7 +89,6 @@ def graph_matrix(connectivity_matrix):
             names.append(x)
     
     nx.set_node_attributes(G, names, 'label')
-    
     pos = nx.circular_layout(G)
     graph = nx.draw_networkx(G, pos=pos, with_labels=True, node_color='skyblue', node_size=50, font_size=10, edge_color='gray')
     #node_label_pos = {k: (v[0], v[1] - 0.1) for k, v in pos.items()}  # Adjust label position
@@ -167,11 +165,11 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
     
-    print(np.histogram(df_clbp_v1))
+    
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_z_score_v1, fmt='%1.3f')
     df_binary_z_score_v1 = binary_mask(df_z_score_v1)
-    print(np.histogram(df_binary_z_score_v1))
+    
     df_graph_z_score_v1 = circle(df_binary_z_score_v1)
     #plt.show()
 
