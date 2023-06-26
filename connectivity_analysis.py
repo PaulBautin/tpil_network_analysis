@@ -79,6 +79,24 @@ def z_score(df_con_v1, df_clbp_v1):
     df_anor_mean = df_anor.groupby("roi").mean()
     return df_anor_mean
 
+def graph_matrix(connectivity_matrix):
+    G = nx.Graph(connectivity_matrix)
+    num_nodes = connectivity_matrix.shape[0]
+    numbers = [f"{i+1:03d}" for i in range(num_nodes)]
+    names = []
+    with open('/home/mafor/dev_tpil/tpil_network_analysis/data/Brainnetome atlas.txt', 'r') as fp:
+        for line in fp:
+            x = line[:-1]
+            names.append(x)
+    
+    nx.set_node_attributes(G, names, 'label')
+    
+    pos = nx.circular_layout(G)
+    graph = nx.draw_networkx(G, pos=pos, with_labels=True, node_color='skyblue', node_size=50, font_size=10, edge_color='gray')
+    #node_label_pos = {k: (v[0], v[1] - 0.1) for k, v in pos.items()}  # Adjust label position
+    #nx.draw_networkx_labels(G, node_label_pos, labels=names)
+    return graph
+
 def binary_mask(connectivity_matrix):
     df_abs_matrix = np.abs(connectivity_matrix)
     df_binary_matrix = (df_abs_matrix > 10).astype(np.int_)
@@ -149,10 +167,11 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
     
-    
+    print(np.histogram(df_clbp_v1))
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_z_score_v1, fmt='%1.3f')
     df_binary_z_score_v1 = binary_mask(df_z_score_v1)
+    print(np.histogram(df_binary_z_score_v1))
     df_graph_z_score_v1 = circle(df_binary_z_score_v1)
     #plt.show()
 
@@ -161,7 +180,7 @@ def main():
     df_binary_con = binary_mask(df_con_mean)
     df_graph_con = circle(df_binary_con)
     #plt.show()
-
+    
     df_clbp_mean = mean_matrix(df_clbp_v1)
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_mean.txt', df_clbp_mean, fmt='%1.3f')
     df_binary_clbp = binary_mask(df_clbp_mean)
