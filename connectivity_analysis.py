@@ -97,7 +97,7 @@ def graph_matrix(df_connectivity_matrix):
 
 def binary_mask(df_connectivity_matrix):
     df_abs_matrix = np.abs(df_connectivity_matrix)
-    df_binary_matrix = (df_abs_matrix > 10).astype(np.int_)
+    df_binary_matrix = (df_abs_matrix > 1).astype(np.int_)
     #np.where(df_abs_matrix > threshold, upper, lower)
     df_upper_binary_matrix = np.triu(df_binary_matrix)
     return df_upper_binary_matrix
@@ -123,13 +123,21 @@ def circle(df_connectivity_matrix):
         for j in range(i + 1, N):
             if A[i, j] == 1:
                 plt.plot([xy[i, 0], xy[j, 0]], [xy[i, 1], xy[j, 1]], "b-")
-
+                label_x_i = xy[i, 0] * 1.22  # Adjust label positioning for node i
+                label_y_i = xy[i, 1] * 1.22 # Adjust label positioning for node i
+                rotation_i = theta[i] * 180 / np.pi
+                label_x_j = xy[j, 0] * 1.22  # Adjust label positioning for node j
+                label_y_j = xy[j, 1] * 1.22  # Adjust label positioning for node j
+                rotation_j = theta[j] * 180 / np.pi
+                if theta[i] > np.pi / 2 and theta[i] < 3 * np.pi / 2:
+                    rotation_i += 180  # Rotate labels on the left side of the circle by 180 degrees
+                if theta[j] > np.pi / 2 and theta[j] < 3 * np.pi / 2:
+                    rotation_j += 180  # Rotate labels on the left side of the circle by 180 degrees
+                plt.text(label_x_i, label_y_i, txt[i], fontsize=8, rotation=rotation_i, ha='center', va='center')
+                plt.text(label_x_j, label_y_j, txt[j], fontsize=8, rotation=rotation_j, ha='center', va='center')
     plt.axis([-1, 1, -1, 1])
     plt.axis("equal")
     plt.axis("off")
-    # show node labels
-    for i in range(N):
-        plt.text(xy[i, 0] * 1.05, xy[i, 1] * 1.05, txt[i], fontsize=4, rotation=theta[i] * 180 / np.pi)
     return df_graph
 
 def find_files_with_common_name(directory, common_name):
@@ -164,6 +172,14 @@ def filter_no_connections(df_connectivity_matrix):
     df_mean_matrix = np.mean(df_zero_matrix.reshape(-1, 246, 246), axis=0)
     df_mean_matrix[df_mean_matrix < 1] = 0
     return df_mean_matrix
+
+def histogram(df_connectivity_matrix):
+    data = df_connectivity_matrix.values.flatten()
+    data_nonzero = data[data != 0]
+    percentiles = np.arange(0, 100, 5)
+    bin_edges = np.percentile(data_nonzero, percentiles)
+    hist, bins = np.histogram(data_nonzero, bins=bin_edges)
+    return hist, bins
  
 def main():
     """
@@ -189,10 +205,13 @@ def main():
     df_clbp_sc_v1 = df_clbp[df_clbp_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
 
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
-    df_binary_z_score_v1 = binary_mask(df_z_score_v1)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_binary_z_score_v1, fmt='%1.3f')
-    df_graph_z_score_v1 = circle(df_binary_z_score_v1)
-    #plt.show()
+    df_z_score_v1[filter_no_connections(df_con_sc_v1) == 0] = 0
+    df_z_score_hist = histogram(df_z_score_v1)
+    print(df_z_score_hist)
+    df_z_score_v1_binary = binary_mask(df_z_score_v1)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_z_score_v1_binary, fmt='%1.3f')
+    df_graph_z_score_v1 = circle(df_z_score_v1_binary)
+    plt.show()
 
     #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
     #plt.colorbar()
@@ -200,19 +219,21 @@ def main():
     
     df_con_mean = mean_matrix(df_con_v1)
     df_con_mean[filter_no_connections(df_con_sc_v1) == 0] = 0
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_mean.txt', df_con_mean, fmt='%1.3f')
-    df_binary_con = binary_mask(df_con_mean)
-    df_graph_con = circle(df_binary_con)
+    df_con_hist = histogram(df_con_mean)
+    #print(df_con_hist)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_mean_hist.txt', df_con_mean, fmt='%1.3f')
+    df_con_binary = binary_mask(df_con_mean)
+    #df_con_graph = circle(df_con_binary)
     #plt.show()
 
     df_clbp_mean = mean_matrix(df_clbp_v1)
     df_clbp_mean[filter_no_connections(df_clbp_sc_v1) == 0] = 0
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_mean.txt', df_clbp_mean, fmt='%1.3f')
-    df_binary_clbp = binary_mask(df_clbp_mean)
-    df_graph_clbp = circle(df_binary_clbp)
+    df_clbp_hist = histogram(df_clbp_mean)
+    #print(df_clbp_hist)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_mean_hist.txt', df_clbp_mean, fmt='%1.3f')
+    df_clbp_binary = binary_mask(df_clbp_mean)
+    #df_graph_clbp = circle(df_clbp_binary)
     #plt.show()
-
-    
     
 if __name__ == "__main__":
     main()
