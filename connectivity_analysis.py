@@ -66,8 +66,8 @@ def get_parser():
     )
     return parser
 
-def mean_matrix(connectivity_matrix):
-    mean_matrix = connectivity_matrix.groupby("roi").mean()
+def mean_matrix(df_connectivity_matrix):
+    mean_matrix = df_connectivity_matrix.groupby("roi").mean()
     return mean_matrix
 
 def z_score(df_con_v1, df_clbp_v1):
@@ -78,9 +78,9 @@ def z_score(df_con_v1, df_clbp_v1):
     df_anor_mean = mean_matrix(df_anor)
     return df_anor_mean
 
-def graph_matrix(connectivity_matrix):
-    G = nx.Graph(connectivity_matrix)
-    num_nodes = connectivity_matrix.shape[0]
+def graph_matrix(df_connectivity_matrix):
+    G = nx.Graph(df_connectivity_matrix)
+    num_nodes = df_connectivity_matrix.shape[0]
     numbers = [f"{i+1:03d}" for i in range(num_nodes)]
     names = []
     with open('/home/mafor/dev_tpil/tpil_network_analysis/data/Brainnetome atlas.txt', 'r') as fp:
@@ -95,15 +95,15 @@ def graph_matrix(connectivity_matrix):
     #nx.draw_networkx_labels(G, node_label_pos, labels=names)
     return graph
 
-def binary_mask(connectivity_matrix):
-    df_abs_matrix = np.abs(connectivity_matrix)
+def binary_mask(df_connectivity_matrix):
+    df_abs_matrix = np.abs(df_connectivity_matrix)
     df_binary_matrix = (df_abs_matrix > 10).astype(np.int_)
     #np.where(df_abs_matrix > threshold, upper, lower)
     df_upper_binary_matrix = np.triu(df_binary_matrix)
     return df_upper_binary_matrix
 
-def circle(connectivity_matrix):
-    A = connectivity_matrix
+def circle(df_connectivity_matrix):
+    A = df_connectivity_matrix
     N = A.shape[0]
     # x/y coordinates of nodes in a circular layout
     r = 1
@@ -137,7 +137,7 @@ def find_files_with_common_name(directory, common_name):
     file_paths = glob.glob(directory + '/*/Compute_Connectivity/' + common_name)
     n = range(len(file_paths))
     dict_paths = {os.path.basename(os.path.dirname(os.path.dirname(file_paths[i]))) : pd.read_csv(file_paths[i], header=None) for i in n}
-     # Remove last 3 columns and rows from each matrix
+    # Remove last 3 columns and rows from each matrix
     for key in dict_paths:
         dict_paths[key] = dict_paths[key].iloc[:-3, :-3]
     df_paths = pd.concat(dict_paths)
@@ -146,8 +146,26 @@ def find_files_with_common_name(directory, common_name):
     df_paths[['subject', 'session']] = df_paths['participant_id'].str.rsplit('_ses-', 1, expand=True)
     df_paths = df_paths.drop("participant_id", axis=1)
     return df_paths
-    
-    
+
+def filter_no_connections(df_connectivity_matrix):
+    #df_connectivity_matrix_numeric = df_connectivity_matrix.copy()
+    #df_connectivity_matrix_numeric.iloc[:, 1:] = df_connectivity_matrix.iloc[:, 1:].replace(r'^\D+$', np.nan, regex=True)
+    df_connectivity_matrix.iloc[:, 1:] = df_connectivity_matrix.iloc[:, 1:].astype(float)
+    df_zero_connections = []
+    df_zero_matrix = np.zeros_like(df_connectivity_matrix.iloc[:, 1:])
+    for row in range(df_zero_matrix.shape[0]):
+        for col in range(df_zero_matrix.shape[1]):
+            if df_connectivity_matrix.iloc[row, col+1] < 1:
+                df_zero_matrix[row, col] = 0
+                df_zero_connections.append((row, col))
+            else:
+                df_zero_matrix[row, col] = 1
+    #If mean of ROI < 1, has at least one 0
+    #df_mean_matrix = df_zero_matrix.set_index(["subject","roi"])
+    #df_mean_matrix = df_zero_matrix.groupby("roi").mean()
+    #df_mask_matrix = (df_mean_matrix > 10).astype(np.int_)
+    return df_zero_matrix
+ 
 def main():
     """
     main function, gather stats and call plots
@@ -165,14 +183,25 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
     
+    df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
+    df_clbp_sc = find_files_with_common_name(path_results_con, "sc.csv")
     
+    df_con_sc_v1 = df_con[df_con_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
+    df_clbp_sc_v1 = df_clbp[df_clbp_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
+    
+    df_zero_filter = filter_no_connections(df_con_sc_v1)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/zer_matrix.csv', df_zero_filter, fmt='%1.3f')
+
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_z_score_v1, fmt='%1.3f')
     df_binary_z_score_v1 = binary_mask(df_z_score_v1)
-    
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_binary_z_score_v1, fmt='%1.3f')
     df_graph_z_score_v1 = circle(df_binary_z_score_v1)
     #plt.show()
 
+    #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
+    #plt.colorbar()
+    #plt.show()
+    
     df_con_mean = mean_matrix(df_con_v1)
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_mean.txt', df_con_mean, fmt='%1.3f')
     df_binary_con = binary_mask(df_con_mean)
@@ -185,9 +214,6 @@ def main():
     df_graph_clbp = circle(df_binary_clbp)
     #plt.show()
 
-    #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
-    #plt.colorbar()
-    #plt.show()
     
     
 if __name__ == "__main__":
