@@ -161,10 +161,9 @@ def filter_no_connections(df_connectivity_matrix):
             else:
                 df_zero_matrix[row, col] = 1
     #If mean of ROI < 1, has at least one 0
-    #df_mean_matrix = df_zero_matrix.set_index(["subject","roi"])
-    #df_mean_matrix = df_zero_matrix.groupby("roi").mean()
-    #df_mask_matrix = (df_mean_matrix > 10).astype(np.int_)
-    return df_zero_matrix
+    df_mean_matrix = np.mean(df_zero_matrix.reshape(-1, 246, 246), axis=0)
+    df_mean_matrix[df_mean_matrix < 1] = 0
+    return df_mean_matrix
  
 def main():
     """
@@ -188,9 +187,6 @@ def main():
     
     df_con_sc_v1 = df_con[df_con_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
     df_clbp_sc_v1 = df_clbp[df_clbp_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
-    
-    df_zero_filter = filter_no_connections(df_con_sc_v1)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/zer_matrix.csv', df_zero_filter, fmt='%1.3f')
 
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
     df_binary_z_score_v1 = binary_mask(df_z_score_v1)
@@ -203,12 +199,14 @@ def main():
     #plt.show()
     
     df_con_mean = mean_matrix(df_con_v1)
+    df_con_mean[filter_no_connections(df_con_sc_v1) == 0] = 0
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_mean.txt', df_con_mean, fmt='%1.3f')
     df_binary_con = binary_mask(df_con_mean)
     df_graph_con = circle(df_binary_con)
     #plt.show()
-    
+
     df_clbp_mean = mean_matrix(df_clbp_v1)
+    df_clbp_mean[filter_no_connections(df_clbp_sc_v1) == 0] = 0
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_mean.txt', df_clbp_mean, fmt='%1.3f')
     df_binary_clbp = binary_mask(df_clbp_mean)
     df_graph_clbp = circle(df_binary_clbp)
