@@ -28,6 +28,7 @@ import seaborn as sns
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import matplotlib.colors as colors
 import glob
 
@@ -78,7 +79,7 @@ def z_score(df_con_v1, df_clbp_v1):
     df_anor_mean = mean_matrix(df_anor)
     return df_anor_mean
 
-def graph_matrix(df_connectivity_matrix):
+#def graph_matrix(df_connectivity_matrix):
     G = nx.Graph(df_connectivity_matrix)
     num_nodes = df_connectivity_matrix.shape[0]
     numbers = [f"{i+1:03d}" for i in range(num_nodes)]
@@ -97,13 +98,14 @@ def graph_matrix(df_connectivity_matrix):
 
 def binary_mask(df_connectivity_matrix):
     df_abs_matrix = np.abs(df_connectivity_matrix)
-    df_binary_matrix = (df_abs_matrix > 1).astype(np.int_)
+    df_binary_matrix = (df_abs_matrix > 0).astype(np.int_)
     #np.where(df_abs_matrix > threshold, upper, lower)
     df_upper_binary_matrix = np.triu(df_binary_matrix)
     return df_upper_binary_matrix
 
+
 def circle(df_connectivity_matrix):
-    A = df_connectivity_matrix
+    A = df_connectivity_matrix.values  # Convert DataFrame to NumPy array
     N = A.shape[0]
     # x/y coordinates of nodes in a circular layout
     r = 1
@@ -117,14 +119,18 @@ def circle(df_connectivity_matrix):
             x = line[:-1]
             names.append(x)
     txt = [f"{name}:{number}" for name, number in zip(names, numbers)]
+    # seaborn styling
+    sns.set(style="whitegrid")
+    plt.figure(figsize=(8, 8))
     # show nodes and edges
-    df_graph = (plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker=".", markersize=15, color="g"))
+    line_plot = plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker="o", markersize=10, color="steelblue", alpha=0.7)
     for i in range(N):
         for j in range(i + 1, N):
-            if A[i, j] == 1:
-                plt.plot([xy[i, 0], xy[j, 0]], [xy[i, 1], xy[j, 1]], "b-")
+            if A[i, j] != 0:  # Change condition to consider non-zero edge intensities
+                edge_color = A[i, j]  # Use the edge intensity as the color value
+                plt.plot([xy[i, 0], xy[j, 0]], [xy[i, 1], xy[j, 1]], color=cm.viridis(edge_color), linewidth=1)
                 label_x_i = xy[i, 0] * 1.22  # Adjust label positioning for node i
-                label_y_i = xy[i, 1] * 1.22 # Adjust label positioning for node i
+                label_y_i = xy[i, 1] * 1.22  # Adjust label positioning for node i
                 rotation_i = theta[i] * 180 / np.pi
                 label_x_j = xy[j, 0] * 1.22  # Adjust label positioning for node j
                 label_y_j = xy[j, 1] * 1.22  # Adjust label positioning for node j
@@ -138,7 +144,15 @@ def circle(df_connectivity_matrix):
     plt.axis([-1, 1, -1, 1])
     plt.axis("equal")
     plt.axis("off")
-    return df_graph
+    plt.tight_layout()
+
+    # Create a colorbar for edge intensities
+    sm = cm.ScalarMappable(cmap=cm.viridis)
+    sm.set_array(A.flatten())
+    cbar = plt.colorbar(sm)
+    cbar.set_label('Edge Intensity')
+    
+    return line_plot
 
 def find_files_with_common_name(directory, common_name):
 
@@ -179,6 +193,11 @@ def histogram(df_connectivity_matrix):
     percentiles = np.arange(0, 100, 5)
     bin_edges = np.percentile(data_nonzero, percentiles)
     hist, bins = np.histogram(data_nonzero, bins=bin_edges)
+    plt.bar(bins[:-1], hist, width=bins[1]-bins[0])
+    plt.xlabel('Bins')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of Connectivity Matrix')
+    
     return hist, bins
  
 def main():
@@ -203,15 +222,15 @@ def main():
     
     df_con_sc_v1 = df_con[df_con_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
     df_clbp_sc_v1 = df_clbp[df_clbp_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
-
+    
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1) 
     df_z_score_v1[filter_no_connections(df_con_sc_v1) == 0] = 0
-    df_z_score_hist = histogram(df_z_score_v1)
-    print(df_z_score_hist)
-    df_z_score_v1_binary = binary_mask(df_z_score_v1)
+    df_z_score_v1[filter_no_connections(df_clbp_sc_v1) == 0] = 0
+    #df_z_score_hist = histogram(df_z_score_v1)
+    #print(df_z_score_hist)
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_score.csv', df_z_score_v1_binary, fmt='%1.3f')
-    df_graph_z_score_v1 = circle(df_z_score_v1_binary)
-    plt.show()
+    #df_graph_z_score_v1 = circle(df_z_score_v1)
+    #plt.show()
 
     #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
     #plt.colorbar()
@@ -219,8 +238,9 @@ def main():
     
     df_con_mean = mean_matrix(df_con_v1)
     df_con_mean[filter_no_connections(df_con_sc_v1) == 0] = 0
+    df_con_mean[filter_no_connections(df_clbp_sc_v1) == 0] = 0
     df_con_hist = histogram(df_con_mean)
-    #print(df_con_hist)
+    print(df_con_hist)
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_mean_hist.txt', df_con_mean, fmt='%1.3f')
     df_con_binary = binary_mask(df_con_mean)
     #df_con_graph = circle(df_con_binary)
@@ -228,8 +248,10 @@ def main():
 
     df_clbp_mean = mean_matrix(df_clbp_v1)
     df_clbp_mean[filter_no_connections(df_clbp_sc_v1) == 0] = 0
+    df_clbp_mean[filter_no_connections(df_clbp_sc_v1) == 0] = 0
     df_clbp_hist = histogram(df_clbp_mean)
-    #print(df_clbp_hist)
+    print(df_clbp_hist)
+    #plt.show()
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_mean_hist.txt', df_clbp_mean, fmt='%1.3f')
     df_clbp_binary = binary_mask(df_clbp_mean)
     #df_graph_clbp = circle(df_clbp_binary)
