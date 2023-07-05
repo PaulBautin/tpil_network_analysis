@@ -33,7 +33,7 @@ my_main_nf='/home/pabaua/projects/def-pascalt-ab/pabaua/dev_tpil/tpil_network_an
 
 my_input_tr='/home/pabaua/scratch/tpil_dev/results/clbp/23-01-24_tractoflow_bundling/results'
 my_input_fs='/home/pabaua/scratch/tpil_dev/data/22-09-21_t1_clbp_freesurfer_output'
-my_template='/home/pabaua/projects/def-pascalt-ab/pabaua/dev_tpil/tpil_network_analysis/freesurfer_data/mni_masked.nii.gz'
+my_template='/home/pabaua/projects/def-pascalt-ab/pabaua/dev_tpil/tpil_network_analysis/connectivity_prep/freesurfer_data/mni_masked.nii.gz'
 
 
 
