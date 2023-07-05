@@ -22,7 +22,6 @@ log.info ""
 log.info "[Input info]"
 log.info "Input tractoflow folder: $params.input_tr"
 log.info "Input freesurfer folder: $params.input_fs"
-log.info "Input MNI template: $params.template"
 log.info ""
 
 workflow.onComplete {
@@ -33,8 +32,6 @@ workflow.onComplete {
 
 
 process Subcortex_segmentation {
-
-
     input:
     tuple val(sid), path(T1nativepro_brain), path(affine), path(warp), file(t1_diffpro_brain)
 
@@ -50,10 +47,10 @@ process Subcortex_segmentation {
     """
 }
 
+
 process Atlas_to_fs {
     memory_limit='6 GB'
     cpus=4
-
 
     input:
     tuple val(sid), path(T1nativepro_brain)
@@ -74,6 +71,7 @@ process Atlas_to_fs {
     cp $SUBJECTS_DIR/${sid}/mri/rh.BN_Atlas.nii.gz .
     """
 }
+
 
 process Parcels_to_subject {
     memory_limit='6 GB'
@@ -107,29 +105,15 @@ workflow {
     // Input files to fetch
     input_tractoflow = file(params.input_tr)
     input_freesurfer = file(params.input_fs)
-    //data_freesurfer = file(params.data_fs)
 
-    //fs_atlas_lh = Channel.fromPath("$data_freesurfer/freesurfer_data/lh.BN_Atlas.gcs")
-    //fs_atlas_rh = Channel.fromPath("$data_freesurfer/freesurfer_data/rh.BN_Atlas.gcs")
-    //fs_atlas_sub = Channel.fromPath("$data_freesurfer/freesurfer_data/BN_Atlas_subcortex.gca")
-
-    //fs_label_lh = Channel.fromPath("$input_freesurfer/**/lh.cortex.label").map{[it.parent.parent.name, it]}
-    //fs_label_rh = Channel.fromPath("$input_freesurfer/**/rh.cortex.label").map{[it.parent.parent.name, it]}
-    //fs_sphere_lh = Channel.fromPath("$input_freesurfer/**/lh.sphere.reg").map{[it.parent.parent.name, it]}
-    //fs_sphere_rh = Channel.fromPath("$input_freesurfer/**/rh.sphere.reg").map{[it.parent.parent.name, it]}
     fs_brain = Channel.fromPath("$input_freesurfer/**/brain.mgz").map{[it.parent.parent.name, it.parent.parent.parent]}
+    fs_brain.view()
 
     t1_nativepro_brain = Channel.fromPath("$input_tractoflow/*/Crop_T1/*__t1_bet_cropped.nii.gz").map{[it.parent.parent.name, it]}
     t1_diffpro_brain = Channel.fromPath("$input_tractoflow/*/Register_T1/*__t1_warped.nii.gz").map{[it.parent.parent.name, it]}
     t1_to_diff_affine = Channel.fromPath("$input_tractoflow/*/Register_T1/*__output0GenericAffine.mat").map{[it.parent.parent.name, it]}
     t1_to_diff_warp = Channel.fromPath("$input_tractoflow/*/Register_T1/*__output1Warp.nii.gz").map{[it.parent.parent.name, it]}
     t1_to_diff_affine.view()
-
-
-    //template = Channel.fromPath("$params.template")
-    //freesurfer_atlas_lh = Channel.fromPath("/home/pabaua/dev_tpil/data/Freesurfer/lh.BN_Atlas.gcs")
-    //tractogram_for_filtering = Channel.fromPath("$root/*/*__tractogram.trk").map{[it.parent.parent.name, it]}
-    //tractogram_for_filtering = Channel.fromPath("$root/*/Local_Tracking/*_local_tracking_prob_fa_seeding_fa_mask_seed_0.trk").map{[it.parent.parent.name, it]}
 
 
     main:
