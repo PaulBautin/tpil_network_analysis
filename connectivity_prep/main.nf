@@ -22,6 +22,7 @@ log.info ""
 log.info "[Input info]"
 log.info "Input tractoflow folder: $params.input_tr"
 log.info "Input freesurfer folder: $params.input_fs"
+log.info "Input MNI template: $params.template"
 log.info ""
 
 workflow.onComplete {
