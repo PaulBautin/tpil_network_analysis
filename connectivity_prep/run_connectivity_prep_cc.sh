@@ -37,6 +37,10 @@ my_template='/home/pabaua/projects/def-pascalt-ab/pabaua/dev_tpil/tpil_network_a
 
 
 
-nextflow run $my_main_nf --input $my_input --atlas $my_atlas \
-    -with-singularity $my_singularity_img --template $my_template -resume
+nextflow run $my_main_nf  \
+  --input_tr $my_input_tr \
+  --input_fs $my_input_fs \
+  --template $my_template \
+  -with-singularity $my_singularity_img \
+  -resume
 
