@@ -36,6 +36,6 @@ my_input_fs='/home/pabaua/scratch/tpil_dev/data/22-09-21_t1_clbp_freesurfer_outp
 nextflow run $my_main_nf  \
   --input_tr $my_input_tr \
   --input_fs $my_input_fs \
-  -with-apptainer $my_singularity_img \
+  -with-singularity $my_singularity_img \
   -resume
 
