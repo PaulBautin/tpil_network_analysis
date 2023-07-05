@@ -123,6 +123,7 @@ workflow {
     t1_diffpro_brain = Channel.fromPath("$input_tractoflow/*/Register_T1/*__t1_warped.nii.gz").map{[it.parent.parent.name, it]}
     t1_to_diff_affine = Channel.fromPath("$input_tractoflow/*/Register_T1/*__output0GenericAffine.mat").map{[it.parent.parent.name, it]}
     t1_to_diff_warp = Channel.fromPath("$input_tractoflow/*/Register_T1/*__output1Warp.nii.gz").map{[it.parent.parent.name, it]}
+    t1_to_diff_affine.view()
 
 
     //template = Channel.fromPath("$params.template")
@@ -134,6 +135,7 @@ workflow {
     main:
     // Subcortex segmentation with first + registration to diffusion space
     t1_nativepro_brain.combine(t1_to_diff_affine, by:0).combine(t1_to_diff_warp, by:0).combine(t1_diffpro_brain, by:0).set{data_sub_seg}
+    data_sub_seg.view()
     Subcortex_segmentation(data_sub_seg)
 
     // Register Atlas parcels into freesurfer space
