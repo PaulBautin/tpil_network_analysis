@@ -37,5 +37,6 @@ nextflow run $my_main_nf  \
   --input_tr $my_input_tr \
   --input_fs $my_input_fs \
   -with-singularity $my_singularity_img \
+  -profile compute_canada \
   -resume
 

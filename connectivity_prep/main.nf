@@ -80,7 +80,8 @@ process Parcels_to_subject {
     tuple val(sid), path(fs_seg_lh), path(fs_seg_rh), path(sub_seg), file(t1_diffpro_brain)
 
     output:
-    tuple val(sid), file("${sid}__fsatlas_transformed.nii.gz"), file("${sid}__nativepro_seg_all.nii.gz")
+    tuple val(sid), file("${sid}__fsatlas_transformed.nii.gz"), emit: fs_parcels
+    tuple val(sid), file("${sid}__nativepro_seg_all.nii.gz"), emit: seg_all
 
     script:
     """
@@ -98,6 +99,27 @@ process Parcels_to_subject {
 }
 
 
+process Connectlow_prep {
+    publishDir = {"./results/$sid"}
+
+    input:
+    tuple val(sid), path(tracto), path(labels), path(T1nativepro_brain), path(dwi), path(bval), path(bvec), path(peaks), path(fodf)
+
+    output:
+    tuple val(sid), file("${sid}__tracking_pft.trk"), file("${sid}__labels.nii.gz"), file("${sid}__t1.nii.gz"),file("${sid}__dwi.nii.gz"),file("${sid}__dwi.bval"),file("${sid}__dwi.bvec"), file("${peaks}"), file("${sid}__fodf.nii.gz")
+
+    script:
+    """
+    cp ${tracto} ${sid}__tracking_pft.trk
+    cp ${labels} ${sid}__labels.nii.gz
+    cp ${T1nativepro_brain} ${sid}__t1.nii.gz
+    cp ${dwi} ${sid}__dwi.nii.gz
+    cp ${bval} ${sid}__dwi.bval
+    cp ${bvec} ${sid}__dwi.bvec
+    """
+}
+
+
 
 workflow {
     // Input files to fetch
@@ -110,6 +132,13 @@ workflow {
     t1_diffpro_brain = Channel.fromPath("$input_tractoflow/*/Register_T1/*__t1_warped.nii.gz").map{[it.parent.parent.name, it]}
     t1_to_diff_affine = Channel.fromPath("$input_tractoflow/*/Register_T1/*__output0GenericAffine.mat").map{[it.parent.parent.name, it]}
     t1_to_diff_warp = Channel.fromPath("$input_tractoflow/*/Register_T1/*__output1Warp.nii.gz").map{[it.parent.parent.name, it]}
+    tracto_diff_pft = Channel.fromPath("$input_tractoflow/*/PFT_Tracking/*__pft_tracking_prob_wm_seed_0.trk").map{[it.parent.parent.name, it]}
+    dwi_diff_pft = Channel.fromPath("$input_tractoflow/*/Resample_DWI/*__dwi_resampled.nii.gz").map{[it.parent.parent.name, it]}
+    bval_diff_eddy = Channel.fromPath("$input_tractoflow/*/Eddy_Topup/*__bval_eddy").map{[it.parent.parent.name, it]}
+    bvec_diff_eddy = Channel.fromPath("$input_tractoflow/*/Eddy_Topup/*__dwi_eddy_corrected.bvec").map{[it.parent.parent.name, it]}
+    peaks_diff = Channel.fromPath("$input_tractoflow/*/FODF_Metrics/*__peaks.nii.gz").map{[it.parent.parent.name, it]}
+    fodf_diff = Channel.fromPath("$input_tractoflow/*/FODF_Metrics/*__fodf.nii.gz").map{[it.parent.parent.name, it]}
+
 
 
     main:
@@ -123,5 +152,10 @@ workflow {
     // Apply and combine cortex and sub-cortex parcels
     Atlas_to_fs.out.map{[it[0], it[2], it[4]]}.combine(Subcortex_segmentation.out.sub_parcels, by:0).combine(t1_diffpro_brain, by:0).set{data_atlas_to_fs}
     Parcels_to_subject(data_atlas_to_fs)
+
+    // Connectlow prep
+    tracto_diff_pft.combine(Parcels_to_subject.out.seg_all, by:0).combine(t1_nativepro_brain, by:0).combine(dwi_diff_pft, by:0).combine(bval_diff_eddy, by:0).combine(bvec_diff_eddy, by:0).combine(peaks_diff, by:0).combine(fodf_diff, by:0).set{data_connectflow_prep}
+    Connectlow_prep(data_connectflow_prep)
+
 }
 

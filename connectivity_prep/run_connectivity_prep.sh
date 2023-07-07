@@ -22,6 +22,7 @@ nextflow run $my_main_nf  \
   --input_fs $my_input_fs \
   --template $my_template \
   -with-singularity $my_singularity_img \
+  -profile local \
   -resume
 
 ################################
