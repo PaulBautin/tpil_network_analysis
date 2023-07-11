@@ -83,12 +83,12 @@ def binary_mask(df_connectivity_matrix): # filters out for desired metrics
     df_abs_matrix = np.abs(df_connectivity_matrix)
     df_binary_matrix = (df_abs_matrix > 10.544).astype(np.int_) # threshold application (hard-coded)
     #np.where(df_abs_matrix > threshold, upper, lower)
-    df_upper_binary_matrix = np.triu(df_binary_matrix) # keep only upper triangle of matrix to avoid duplication of data
-    return df_upper_binary_matrix
+    return df_binary_matrix
 
 
 def circle(df_connectivity_matrix):
-    A = df_connectivity_matrix.values # convert DataFrame to NumPy array
+    df_upper_matrix = np.triu(df_connectivity_matrix) # keep only upper triangle of matrix to avoid duplication of data
+    A = df_upper_matrix 
     N = A.shape[0] #length of matrix
     # x/y coordinates of nodes in a circular layout
     r = 1
@@ -171,18 +171,19 @@ def filter_no_connections(df_connectivity_matrix):
     return df_mean_matrix
 
 def filter_scilpy(df_connectivity_matrix):
-    mask_con = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_streamline.npy')[:-3,:-3]
-    mask_clbp = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_streamline.npy')[:-3,:-3]
-    mask = mask_con * mask_clbp
-    print(mask)
+    mask_con_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_streamline.npy')[:-3,:-3]
+    mask_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_streamline.npy')[:-3,:-3]
+    mask_con_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_len.npy')[:-3,:-3]
+    mask_clbp_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_len.npy')[:-3,:-3]
+    mask = mask_con_len * mask_clbp_len
     mask_data = df_connectivity_matrix * mask
-    print(mask_data)
     return mask_data
 
 def histogram(df_connectivity_matrix):
     data = df_connectivity_matrix.values.flatten()
     data[np.isnan(data)] = 0
     data_nonzero = data[data != 0]
+    np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_filterall.csv', data_nonzero, fmt='%1.3f')
     percentiles = np.arange(0, 100, 5) # each bin contains 5% of all data
     bin_edges = np.percentile(data_nonzero, percentiles)
     hist, bins = np.histogram(data_nonzero, bins=bin_edges)
@@ -240,9 +241,9 @@ def main():
     
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
     df_z_score_v1 = filter_scilpy(df_z_score_v1) 
-    #df_z_score_v1[df_clbp_binary == 0] = 0
+    #df_z_score_v1[df_z_score_v1 < 1.96] = 0
     #df_z_score_hist = histogram(df_z_score_v1)
-    np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_filter.csv', df_z_score_v1, fmt='%1.3f')
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_filter.csv', df_z_score_hist, fmt='%1.3f')
     #df_graph_z_score_v1 = circle(df_z_score_v1)
     #plt.show()
 
