@@ -23,6 +23,7 @@ import pandas as pd
 import numpy as np
 import os
 import argparse
+import seaborn as sns
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -31,11 +32,14 @@ import matplotlib.colors as colors
 import glob
 from connectivity_read_files import find_files_with_common_name
 from connectivity_filtering import scilpy_filter
+from netneurotools.utils import get_centroids
+from netneurotools.networks import threshold_network, struct_consensus
+from scipy.spatial.distance import squareform, pdist
 from connectivity_filtering import load_brainnetome_centroids
 from connectivity_filtering import distance_dependant_filter
 from connectivity_filtering import threshold_filter
-from connectivity_graph import circle
-from connectivity_graph import histogram
+from connectivity_graphing import circle_graph
+from connectivity_graphing import histogram
 
 def get_parser():
     """parser function"""
@@ -107,28 +111,50 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
     
-
     
     df_con_mean = mean_matrix(df_con_v1)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_mean_hist.txt', df_con_mean, fmt='%1.3f')
-    df_con_binary = binary_mask(df_con_mean)
+    #df_con_hist = histogram(df_con_mean)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_hist.txt', df_con_hist, fmt='%1.3f')
 
     df_clbp_mean = mean_matrix(df_clbp_v1)
     #df_clbp_hist = histogram(df_clbp_mean)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_filter.txt', df_clbp_mean, fmt='%1.3f')
-    #df_clbp_binary = binary_mask(df_clbp_mean)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_hist.txt', df_clbp_hist, fmt='%1.3f')
     
+
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
-    df_z_score_v1 = scilpy_filter(df_z_score_v1) 
-    #df_z_score_v1[df_z_score_v1 < 1.96] = 0
-    #df_z_score_hist = histogram(df_z_score_v1)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_filter.csv', df_z_score_hist, fmt='%1.3f')
-    #df_graph_z_score_v1 = circle(df_z_score_v1)
+    
+
+    df_z_score_scilpy = scilpy_filter(df_z_score_v1) 
+    #df_z_score_scilpy_hist = histogram(df_z_score_v1)
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_scilpy.csv', df_z_score_scilpy_hist, fmt='%1.3f')
+    #df_graph_z_score_scilpy = circle(df_z_score_scilpy)
     #plt.show()
 
-    #plt.imshow(df_z_score_v1, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
+    #plt.imshow(df_z_score_scilpy, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
     #plt.colorbar()
     #plt.show()
     
+    
+    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
+    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
+    np_con_dist = distance_dependant_filter(np_con_v1)
+    np_con_thresh = threshold_filter(np_con_v1)
+    np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
+    np_clbp_dist = distance_dependant_filter(np_clbp_v1)
+    np_clbp_thresh = threshold_filter(np_clbp_v1)
+    mask = np_con_dist * np_clbp_dist * np_con_thresh * np_clbp_thresh
+    df_z_score_mask = df_z_score_v1 * mask
+    df_z_score_mask[np.isnan(df_z_score_mask)] = 0
+    df_z_score_mask_hist = df_z_score_mask.values.flatten()
+    np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_dist.csv', df_z_score_mask_hist, fmt='%1.3f')
+    df_graph_z_score_mask = circle_graph(df_z_score_mask)
+    #plt.show()
+
+    #plt.imshow(df_z_score_dist, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
+    #plt.colorbar()
+    #plt.show()
+
+
+
 if __name__ == "__main__":
     main()

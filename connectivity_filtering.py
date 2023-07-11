@@ -74,7 +74,7 @@ def get_parser():
 
 
 def load_brainnetome_centroids():
-    bn_centroids = get_centroids("/home/pabaua/dev_tpil/data/BN/BN_Atlas_for_FSL/Brainnetome/BNA-maxprob-thr0-1mm.nii.gz")
+    bn_centroids = get_centroids("/home/mafor/dev_tpil/tpil_network_analysis/labels/BNA-maxprob-thr0-1mm.nii.gz")
     return bn_centroids
 
 def distance_dependant_filter(np_con_v1):
@@ -84,6 +84,7 @@ def distance_dependant_filter(np_con_v1):
     consensus_conn = struct_consensus(np_con_v1, distance=eu_distance, hemiid=hemiid.reshape(-1, 1))
     print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
     print("average_distance_with_filter: {}".format(np.mean(eu_distance * consensus_conn, where=(consensus_conn != 0))))
+    return consensus_conn
 
 
 def threshold_filter(np_con_v1):
@@ -92,6 +93,7 @@ def threshold_filter(np_con_v1):
     threshold_conn = threshold_network(np.mean(np_con_v1,axis=2), retain=10)
     print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
     print("average_distance_with_filter: {}".format(np.mean(eu_distance * threshold_conn, where=(threshold_conn != 0))))
+    return threshold_conn
 
 #def filter_no_connections(df_connectivity_matrix):
     #df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
@@ -118,7 +120,7 @@ def scilpy_filter(df_connectivity_matrix):
     mask_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_streamline.npy')[:-3,:-3]
     mask_con_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_len.npy')[:-3,:-3]
     mask_clbp_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_len.npy')[:-3,:-3]
-    mask = mask_con_len * mask_clbp_len
+    mask = mask_con_len * mask_clbp_len * mask_con_sc * mask_clbp_sc
     mask_data = df_connectivity_matrix * mask
     return mask_data
 
@@ -146,7 +148,7 @@ def main():
     #plt.show()
 
     dist_filter = distance_dependant_filter(np_con_v1)
-
+    
     thresh_filter = threshold_filter(np_con_v1)
 
     scil_filter = scilpy_filter(np_con_v1)
