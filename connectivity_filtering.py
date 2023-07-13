@@ -22,7 +22,6 @@ from __future__ import division
 import pandas as pd
 import numpy as np
 import os
-import networkx as nx
 import argparse
 import matplotlib
 
@@ -75,7 +74,7 @@ def get_parser():
 
 
 def load_brainnetome_centroids():
-    bn_centroids = get_centroids("/home/pabaua/dev_tpil/data/BN/BN_Atlas_for_FSL/Brainnetome/BNA-maxprob-thr0-1mm.nii.gz")
+    bn_centroids = get_centroids("/home/mafor/dev_tpil/tpil_network_analysis/labels/BNA-maxprob-thr0-1mm.nii.gz")
     return bn_centroids
 
 def distance_dependant_filter(np_con_v1):
@@ -85,6 +84,7 @@ def distance_dependant_filter(np_con_v1):
     consensus_conn = struct_consensus(np_con_v1, distance=eu_distance, hemiid=hemiid.reshape(-1, 1))
     print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
     print("average_distance_with_filter: {}".format(np.mean(eu_distance * consensus_conn, where=(consensus_conn != 0))))
+    return consensus_conn
 
 
 def threshold_filter(np_con_v1):
@@ -93,6 +93,36 @@ def threshold_filter(np_con_v1):
     threshold_conn = threshold_network(np.mean(np_con_v1,axis=2), retain=10)
     print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
     print("average_distance_with_filter: {}".format(np.mean(eu_distance * threshold_conn, where=(threshold_conn != 0))))
+    return threshold_conn
+
+#def filter_no_connections(df_connectivity_matrix):
+    #df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
+    #df_clbp_sc = find_files_with_common_name(path_results_con, "sc.csv")
+    #df_con_sc_v1 = df_con[df_con_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
+    #df_clbp_sc_v1 = df_clbp[df_clbp_sc['session'] == "v1"].drop(["subject", "session"], axis=1)
+    #df_connectivity_matrix.iloc[:, 1:] = df_connectivity_matrix.iloc[:, 1:].astype(float) # converts in format that np can use
+    #df_zero_connections = []
+    #df_zero_matrix = np.zeros_like(df_connectivity_matrix.iloc[:, 1:]) 
+    #for row in range(df_zero_matrix.shape[0]):
+    #    for col in range(df_zero_matrix.shape[1]):
+    #        if df_connectivity_matrix.iloc[row, col+1] < 1: # all non-zero values (integers) convert to 1
+    #            df_zero_matrix[row, col] = 0
+    #            df_zero_connections.append((row, col))
+    #        else:
+    #            df_zero_matrix[row, col] = 1
+    #If mean of ROI < 1, has at least one 0
+    #df_mean_matrix = np.mean(df_zero_matrix.reshape(-1, 246, 246), axis=0)
+    #df_mean_matrix[df_mean_matrix < 1] = 0
+    #return df_mean_matrix
+
+def scilpy_filter(df_connectivity_matrix):
+    mask_con_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_streamline.npy')[:-3,:-3]
+    mask_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_streamline.npy')[:-3,:-3]
+    mask_con_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_len.npy')[:-3,:-3]
+    mask_clbp_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_len.npy')[:-3,:-3]
+    mask = mask_con_len * mask_clbp_len * mask_con_sc * mask_clbp_sc
+    mask_data = df_connectivity_matrix * mask
+    return mask_data
 
 
 def main():
@@ -118,17 +148,10 @@ def main():
     #plt.show()
 
     dist_filter = distance_dependant_filter(np_con_v1)
-
+    
     thresh_filter = threshold_filter(np_con_v1)
 
-
-
-
-
-
-
-
-
+    scil_filter = scilpy_filter(np_con_v1)
 
 if __name__ == "__main__":
     main()
