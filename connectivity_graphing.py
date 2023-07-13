@@ -10,7 +10,7 @@ from __future__ import division
 # ---------------------------------------------------------------------------------------
 # Authors: Marc Antoine
 #
-# Prerequis: environnement virtuel avec python, pandas, numpy et matplotlib (env_tpil)
+# Prerequis: environnement virtuel avec python, pandas, numpy, netneurotools, scilpy et matplotlib (env_tpil)
 #
 #########################################################################################
 
@@ -32,6 +32,9 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 import glob
 from connectivity_read_files import find_files_with_common_name
+from netneurotools.utils import get_centroids
+from netneurotools.plotting import plot_point_brain
+
 
 
 
@@ -70,6 +73,11 @@ def get_parser():
     return parser
 
 def circle_graph(df_connectivity_matrix):
+    """"
+    Generates a circular graph of nodes with edge intensity and brainnetome labels
+    input: (N, N) connectivity matrix
+    output: matplotlib graph
+    """
     df_connectivity_matrix[np.isnan(df_connectivity_matrix)] = 0
     df_upper_matrix = np.triu(df_connectivity_matrix) # keep only upper triangle of matrix to avoid duplication of data
     A = df_upper_matrix 
@@ -122,6 +130,12 @@ def circle_graph(df_connectivity_matrix):
     return line_plot
 
 def histogram(df_connectivity_matrix):
+    """
+    Generates a histogram of all non-zero values for data visualization
+    Bin separation at 5% of data
+    input: (N, N) connectivity matrix
+    ouput: matplotlib graph
+    """
     data = df_connectivity_matrix.values.flatten()
     data[np.isnan(data)] = 0
     data_nonzero = data[data != 0]
@@ -165,8 +179,9 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
 
-    circular_graph = circle_graph(df_con_v1)
-    hist_graph = histogram(df_con_v1)
+    #circular_graph = circle_graph(df_con_v1)
+    #hist_graph = histogram(df_con_v1)
+
 
 if __name__ == "__main__":
     main()
