@@ -10,7 +10,7 @@ from __future__ import division
 # ---------------------------------------------------------------------------------------
 # Authors: Marc Antoine
 #
-# Prerequis: environnement virtuel avec python, pandas, numpy et matplotlib (env_tpil)
+# Prerequis: environnement virtuel avec python, pandas, numpy, netneurotools, scilpy et matplotlib (env_tpil)
 #
 #########################################################################################
 
@@ -74,10 +74,24 @@ def get_parser():
 
 
 def load_brainnetome_centroids():
+    """
+    Loads Euclidean coordinates of nodes
+    """
     bn_centroids = get_centroids("/home/mafor/dev_tpil/tpil_network_analysis/labels/BNA-maxprob-thr0-1mm.nii.gz")
     return bn_centroids
 
 def distance_dependant_filter(np_con_v1):
+    """
+    Calculates distance-dependent group consensus structural connectivity graph
+    This filter is considered distance-dependant as it will divide data into bins (based on edge length percentile).
+    It then takes the edge with the best consensus (edge represented with the most stability accross subjects)
+    input: (N, N, S) connectivity matrix, pairwise distance matrix, (N, 1) vector identifying right hemisphere (0)
+            and left hemisphere (1)
+    output: (N, N) binary np.array matrix mask 
+
+    Betzel, R. F., Griffa, A., Hagmann, P., & Mišić, B. (2018). Distance- dependent consensus thresholds for generating 
+    group-representative structural brain networks. Network Neuroscience, 1-22.
+    """
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
     hemiid = np.arange(1, 247) % 2
@@ -88,6 +102,12 @@ def distance_dependant_filter(np_con_v1):
 
 
 def threshold_filter(np_con_v1):
+    """
+    Uses a minimum spanning tree to ensure that no nodes are disconnected from the resulting thresholded graph.
+    Keeps top 10% of connections
+    input : (N, N) connectivity matrix, percent connection to retain
+    output: (N, N) binary np.array matrix mask
+    """
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
     threshold_conn = threshold_network(np.mean(np_con_v1,axis=2), retain=10)
@@ -116,6 +136,13 @@ def threshold_filter(np_con_v1):
     #return df_mean_matrix
 
 def scilpy_filter(df_connectivity_matrix):
+    """
+    Each node with a value of 1 represents a node with at least 90% of the population having at least 1 streamline
+    and at least 90% of the population having at least 20mm of average streamlines length. 
+    Population is all clbp and control subjects
+    input : (N, N) connectivity matrix
+    output: (N, N) binary df matrix mask
+    """
     mask_con_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_streamline.npy')[:-3,:-3]
     mask_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_streamline.npy')[:-3,:-3]
     mask_con_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_len.npy')[:-3,:-3]

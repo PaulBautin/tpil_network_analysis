@@ -10,7 +10,7 @@ from __future__ import division
 # ---------------------------------------------------------------------------------------
 # Authors: Marc Antoine
 #
-# Prerequis: environnement virtuel avec python, pandas, numpy et matplotlib (env_tpil)
+# Prerequis: environnement virtuel avec python, pandas, numpy, netneurotools, scilpy et matplotlib (env_tpil)
 #
 #########################################################################################
 
@@ -105,11 +105,21 @@ def main():
     path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
     path_output = os.path.abspath(arguments.o)
 
+    ### Get connectivity data
     df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
 
+    # work only on one session at a time
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
+
+    ### Get similarity data
+    df_con_sim = find_files_with_common_name(path_results_con, "sim.csv")
+    df_clbp_sim = find_files_with_common_name(path_results_clbp, "sim.csv")
+
+    # work only on one session at a time
+    df_con_sim_v1 = df_con_sim[df_con['session'] == "v1"].drop("session", axis=1)
+    df_clbp_sim_v1 = df_clbp_sim[df_clbp['session'] == "v1"].drop("session", axis=1)
     
     
     df_con_mean = mean_matrix(df_con_v1)
@@ -122,6 +132,7 @@ def main():
     
 
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
+    df_z_score_v1[np.isnan(df_z_score_v1)] = 0
     
 
     df_z_score_scilpy = scilpy_filter(df_z_score_v1) 
@@ -142,12 +153,12 @@ def main():
     np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     np_clbp_dist = distance_dependant_filter(np_clbp_v1)
     np_clbp_thresh = threshold_filter(np_clbp_v1)
-    mask = np_con_dist * np_clbp_dist * np_con_thresh * np_clbp_thresh
-    df_z_score_mask = df_z_score_v1 * mask
-    df_z_score_mask[np.isnan(df_z_score_mask)] = 0
-    df_z_score_mask_hist = df_z_score_mask.values.flatten()
-    np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_dist.csv', df_z_score_mask_hist, fmt='%1.3f')
-    df_graph_z_score_mask = circle_graph(df_z_score_mask)
+    mask = np_con_thresh * np_clbp_thresh
+    #df_z_score_mask = df_z_score_v1 * mask
+    #df_z_score_mask[np.isnan(df_z_score_mask)] = 0
+    #df_z_score_mask_hist = df_z_score_mask.values.flatten()
+    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/sim_filtery.csv', df_z_score_mask_hist, fmt='%1.3f')
+    #df_graph_z_score_mask = circle_graph(df_z_score_mask)
     #plt.show()
 
     #plt.imshow(df_z_score_dist, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
