@@ -31,6 +31,8 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 import glob
 from connectivity_read_files import find_files_with_common_name
+from netneurotools.plotting import plot_point_brain
+from netneurotools.metrics import degrees_und
 
 
 def get_parser():
@@ -68,8 +70,10 @@ def get_parser():
     return parser
 
 def connectivity_matrix_viewer(conn_matrix):
-    plt.imshow(conn_matrix[:,:,0], cmap='YlGnBu')
+    plt.imshow(np.log(conn_matrix[:,:,0]), cmap='RdYlBu')
     plt.show()
+
+
 
 
 def plot_network(adj, coords):
@@ -156,7 +160,9 @@ def main():
     np_con_v1 = np.dstack(
         list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject', 'roi']).to_numpy())))
     connectivity_matrix_viewer(np_con_v1)
-    plot_network(np_con_v1[:,:,0], load_brainnetome_centroids())
+    #plot_network(np_con_v1[:,:,0], load_brainnetome_centroids())
+    plot_point_brain(degrees_und(np_con_v1[:,:,0]), load_brainnetome_centroids(), views='ax', views_size=(8,4.8))
+    plt.show()
 
 
 
