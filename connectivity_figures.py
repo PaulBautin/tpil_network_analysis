@@ -90,39 +90,43 @@ def plot_network(adj, coords):
     fig = plt.figure(figsize=(11,5))
     ax = fig.add_subplot(121, projection='3d')
     # Identify edges in the network
-    edges = np.where(adj > 0)
+    edges = np.where(adj != 0)
     print(edges[0].shape)
-    edge_cmap = plt.get_cmap('gray')
-    norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges]), vmax=np.max(adj[edges]))
-    edge_val = edge_cmap(norm(adj[edges]))
+    edge_cmap = plt.get_cmap('viridis')
+    norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
+    edge_val = edge_cmap(norm(adj[edges].flatten()))
     # Plot the edges
     for edge_i, edge_j, c in zip(edges[0], edges[1], edge_val):
         x1, x2 = coords[edge_i, 0], coords[edge_j, 0]
         y1, y2 = coords[edge_i, 1], coords[edge_j, 1]
         z1, z2 = coords[edge_i, 2], coords[edge_j, 2]
-        ax.plot([x1, x2], [y1, y2], [z1, z2], c=c, alpha=0.5, zorder=0, linewidth=1)
-    scatter = ax.scatter(coords[:, 0],coords[:, 1],coords[:, 2], c=np.arange(1, 247), alpha=0.8)
+        ax.plot([x1, x2], [y1, y2], [z1, z2], color=c, alpha=0.5, zorder=0, linewidth=1)
+    #scatter = ax.scatter(coords[:, 0],coords[:, 1],coords[:, 2], c=np.arange(1, 247), alpha=0.8)
     ax.view_init(elev=0, azim=180)
     ax.set_box_aspect((np.ptp(coords[:, 0]), np.ptp(coords[:, 1]), np.ptp(coords[:, 2])))
     ax.axis('off')
 
     ax2 = fig.add_subplot(122, projection='3d')
     # Identify edges in the network
-    edges = np.where(adj > 0)
-    edge_cmap = plt.get_cmap('gray')
-    norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges]), vmax=np.max(adj[edges]))
-    edge_val = edge_cmap(norm(adj[edges]))
+    edges = np.where(adj != 0)
+    edge_cmap = plt.get_cmap('viridis')
+    norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
+    edge_val = edge_cmap(norm(adj[edges].flatten()))
     # Plot the edges
     for edge_i, edge_j, c in zip(edges[0], edges[1], edge_val):
         x1, x2 = coords[edge_i, 0], coords[edge_j, 0]
         y1, y2 = coords[edge_i, 1], coords[edge_j, 1]
         z1, z2 = coords[edge_i, 2], coords[edge_j, 2]
-        ax2.plot([x1, x2], [y1, y2], [z1, z2], c=c, alpha=0.5, zorder=0, linewidth=1)
-    scatter_2 = ax2.scatter(coords[:, 0], coords[:, 1], coords[:, 2], c=np.arange(1, 247), alpha=0.8)
+        ax2.plot([x1, x2], [y1, y2], [z1, z2], color=c, alpha=0.5, zorder=0, linewidth=1)
+    # Filter coords and node_colors based on the presence of edges
+    filtered_coords = coords[edges[0]]
+
+    ax2.scatter(filtered_coords[:, 0], filtered_coords[:, 1], filtered_coords[:, 2],
+                            c='k', alpha=0.8)
     ax2.view_init(elev=90, azim=-90)
     ax2.axis('off')
     ax2.set_box_aspect((np.ptp(coords[:, 0]), np.ptp(coords[:, 1]), np.ptp(coords[:, 2])))
-    fig.colorbar(scatter_2)
+    fig.colorbar(cm.ScalarMappable(norm=norm, cmap=edge_cmap))
     fig.tight_layout()
     plt.show()
 

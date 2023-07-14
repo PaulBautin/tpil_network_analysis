@@ -32,14 +32,13 @@ import matplotlib.colors as colors
 import glob
 from connectivity_read_files import find_files_with_common_name
 from connectivity_filtering import scilpy_filter
-from netneurotools.utils import get_centroids
-from netneurotools.networks import threshold_network, struct_consensus
-from scipy.spatial.distance import squareform, pdist
 from connectivity_filtering import load_brainnetome_centroids
 from connectivity_filtering import distance_dependant_filter
 from connectivity_filtering import threshold_filter
 from connectivity_graphing import circle_graph
 from connectivity_graphing import histogram
+from connectivity_figures import plot_network
+from connectivity_figures import load_brainnetome_centroids
 
 def get_parser():
     """parser function"""
@@ -76,10 +75,33 @@ def get_parser():
     return parser
 
 def mean_matrix(df_connectivity_matrix):
-    mean_matrix = df_connectivity_matrix.groupby("roi").mean() # returns mean value of all subjects for an edge
+    """
+    Returns mean value of all subjects for a given edge
+
+    Parameters
+    ----------
+    df_connectivity_matrix : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    
+    Returns
+    -------
+    mean_matrix : (N, N) pandas DataFrame
+    """
+    mean_matrix = df_connectivity_matrix.groupby("roi").mean()  
     return mean_matrix
 
 def z_score(df_con_v1, df_clbp_v1):
+    """
+    Returns mean z-score between clbp and con data for a given edge
+
+    Parameters
+    ----------
+    df_con_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clbp_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    df_anor_mean : (N, N) pandas DataFrame
+    """
     df_con_mean = mean_matrix(df_con_v1)
     df_con_std = df_con_v1.groupby("roi").std()
     df_clbp = df_clbp_v1.set_index(["subject","roi"]) # step necessary to apply z-score equation on every subject
@@ -87,11 +109,22 @@ def z_score(df_con_v1, df_clbp_v1):
     df_anor_mean = mean_matrix(df_anor)
     return df_anor_mean
 
-def binary_mask(df_connectivity_matrix): # filters out for desired metrics
-    df_abs_matrix = np.abs(df_connectivity_matrix)
-    df_binary_matrix = (df_abs_matrix > 10.544).astype(np.int_) # threshold application (hard-coded)
-    #np.where(df_abs_matrix > threshold, upper, lower)
-    return df_binary_matrix
+def prepare_data(df_connectivity_matrix):
+    """
+    Returns Data in the appropriate format fro figure functions
+
+    Parameters
+    ----------
+    df_connectivity_matrix : (N, N) pandas DataFrame
+
+    Returns
+    -------
+    np_connectivity_matrix : (N, N) array_like
+    """
+    df_connectivity_matrix[np.isnan(df_connectivity_matrix)] = 0 
+    np_connectivity_matrix = df_connectivity_matrix.values
+    np_connectivity_matrix = np.triu(abs(np_connectivity_matrix))
+    return np_connectivity_matrix
 
  
 def main():
@@ -125,40 +158,28 @@ def main():
     df_con_mean = mean_matrix(df_con_v1)
     #df_con_hist = histogram(df_con_mean)
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_hist.txt', df_con_hist, fmt='%1.3f')
-
     df_clbp_mean = mean_matrix(df_clbp_v1)
     #df_clbp_hist = histogram(df_clbp_mean)
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_hist.txt', df_clbp_hist, fmt='%1.3f')
     
-
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
-    df_z_score_v1[np.isnan(df_z_score_v1)] = 0
-    
-
-    df_z_score_scilpy = scilpy_filter(df_z_score_v1) 
-    #df_z_score_scilpy_hist = histogram(df_z_score_v1)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/z_scilpy.csv', df_z_score_scilpy_hist, fmt='%1.3f')
-    #df_graph_z_score_scilpy = circle(df_z_score_scilpy)
-    #plt.show()
-
-    #plt.imshow(df_z_score_scilpy, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
-    #plt.colorbar()
-    #plt.show()
-    
-    
+    np_z_score_v1 = prepare_data(df_z_score_v1)
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
     np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     np_con_dist = distance_dependant_filter(np_con_v1)
-    np_con_thresh = threshold_filter(np_con_v1)
+    #np_con_thresh = threshold_filter(np_con_v1)
     np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     np_clbp_dist = distance_dependant_filter(np_clbp_v1)
-    np_clbp_thresh = threshold_filter(np_clbp_v1)
-    mask = np_con_thresh * np_clbp_thresh
-    #df_z_score_mask = df_z_score_v1 * mask
-    #df_z_score_mask[np.isnan(df_z_score_mask)] = 0
+    #np_clbp_thresh = threshold_filter(np_clbp_v1)
+    mask = np_con_dist * np_clbp_dist
+    figure_data = mask * np_z_score_v1
+    plot_network(figure_data, load_brainnetome_centroids())
+    
+    
     #df_z_score_mask_hist = df_z_score_mask.values.flatten()
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/sim_filtery.csv', df_z_score_mask_hist, fmt='%1.3f')
     #df_graph_z_score_mask = circle_graph(df_z_score_mask)
+    #plot_network(df_z_score_mask, load_brainnetome_centroids())
     #plt.show()
 
     #plt.imshow(df_z_score_dist, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))

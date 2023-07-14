@@ -72,15 +72,20 @@ def get_parser():
     )
     return parser
 
-def circle_graph(df_connectivity_matrix):
-    """"
-    Generates a circular graph of nodes with edge intensity and brainnetome labels
-    input: (N, N) connectivity matrix
-    output: matplotlib graph
+def circle_graph(np_connectivity_matrix):
     """
-    df_connectivity_matrix[np.isnan(df_connectivity_matrix)] = 0
-    df_upper_matrix = np.triu(df_connectivity_matrix) # keep only upper triangle of matrix to avoid duplication of data
-    A = df_upper_matrix 
+    Plots a circular graph of nodes with edge intensity and brainnetome labels
+
+    Parameters
+    ----------
+    np_connectivity_matrix : (N,N) array_like
+
+    Returns
+    -------
+    fig : :class:`matplotlib.figure.Figure`
+    """
+    np_connectivity_matrix[np.isnan(np_connectivity_matrix)] = 0
+    A = np_connectivity_matrix
     N = A.shape[0] #length of matrix
     # x/y coordinates of nodes in a circular layout
     r = 1
@@ -126,17 +131,21 @@ def circle_graph(df_connectivity_matrix):
     sm.set_array(A.flatten())
     cbar = plt.colorbar(sm)
     cbar.set_label('Edge Intensity')
-    
-    return line_plot
+    plt.show()
 
-def histogram(df_connectivity_matrix):
+def histogram(np_connectivity_matrix):
     """
-    Generates a histogram of all non-zero values for data visualization
-    Bin separation at 5% of data
-    input: (N, N) connectivity matrix
-    ouput: matplotlib graph
+    Plots a histogram of connectivity matrix
+
+    Parameters
+    ----------
+    np_connectivity_matrix : (N,N) array_like
+
+    Returns
+    -------
+    fig : :class:`matplotlib.figure.Figure`
     """
-    data = df_connectivity_matrix.values.flatten()
+    data = np_connectivity_matrix.flatten()
     data[np.isnan(data)] = 0
     data_nonzero = data[data != 0]
     percentiles = np.arange(0, 100, 5) # each bin contains 5% of all data
