@@ -128,8 +128,9 @@ def plot_network(adj, coords):
 
 
 def load_brainnetome_centroids():
-    bn_centroids = get_centroids("/home/pabaua/dev_tpil/data/BN/BN_Atlas_for_FSL/Brainnetome/BNA-maxprob-thr0-1mm.nii.gz")
+    bn_centroids = get_centroids("/home/mafor/dev_tpil/tpil_network_analysis/labels/BNA-maxprob-thr0-1mm.nii.gz")
     return bn_centroids
+
 def main():
     """
     main function, gather stats and call plots
