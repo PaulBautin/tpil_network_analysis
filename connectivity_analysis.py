@@ -38,7 +38,7 @@ from connectivity_filtering import threshold_filter
 from connectivity_graphing import circle_graph
 from connectivity_graphing import histogram
 from connectivity_figures import plot_network
-from connectivity_figures import load_brainnetome_centroids
+from connectivity_filtering import load_brainnetome_centroids
 
 def get_parser():
     """parser function"""
@@ -109,9 +109,9 @@ def z_score(df_con_v1, df_clbp_v1):
     df_anor_mean = mean_matrix(df_anor)
     return df_anor_mean
 
-def prepare_data(df_connectivity_matrix):
+def prepare_data(df_connectivity_matrix, absolute=True):
     """
-    Returns Data in the appropriate format fro figure functions
+    Returns Data in the appropriate format for figure functions
 
     Parameters
     ----------
@@ -123,7 +123,10 @@ def prepare_data(df_connectivity_matrix):
     """
     df_connectivity_matrix[np.isnan(df_connectivity_matrix)] = 0 
     np_connectivity_matrix = df_connectivity_matrix.values
-    np_connectivity_matrix = np.triu(abs(np_connectivity_matrix))
+    if absolute:
+        np_connectivity_matrix = np.triu(abs(np_connectivity_matrix))
+    else:
+        np_connectivity_matrix = np.triu(np_connectivity_matrix)
     return np_connectivity_matrix
 
  
@@ -143,8 +146,8 @@ def main():
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
 
     # work only on one session at a time
-    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
+    df_con_v1 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
+    df_clbp_v1 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
 
     ### Get similarity data
     df_con_sim = find_files_with_common_name(path_results_con, "sim.csv")
@@ -163,7 +166,7 @@ def main():
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_hist.txt', df_clbp_hist, fmt='%1.3f')
     
     df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
-    np_z_score_v1 = prepare_data(df_z_score_v1)
+    np_z_score_v1 = prepare_data(df_z_score_v1, absolute=False)
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
     np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     np_con_dist = distance_dependant_filter(np_con_v1)

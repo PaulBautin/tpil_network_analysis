@@ -73,11 +73,18 @@ def get_parser():
 
 
 
-def load_brainnetome_centroids():
+def load_brainnetome_centroids(image="/home/pabaua/dev_tpil/results/results_connectivity_prep/results/sub-pl007_ses-v1/Parcels_to_subject/sub-pl007_ses-v1__nativepro_seg_all.nii.gz"):
     """
     Loads Euclidean coordinates of nodes
+    Parameters
+    ----------
+    image : nifti label image
+
+    Returns
+    -------
+    bn_centroids : (3, N) np.array node centroid coordinates
     """
-    bn_centroids = get_centroids("/home/mafor/dev_tpil/tpil_network_analysis/labels/BNA-maxprob-thr0-1mm.nii.gz")
+    bn_centroids = get_centroids(image)
     return bn_centroids
 
 def distance_dependant_filter(np_con_v1):
@@ -100,7 +107,8 @@ def distance_dependant_filter(np_con_v1):
     """
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
-    hemiid = np.arange(1, 247) % 2
+    # first has 8 on left and 7 on right
+    hemiid = np.append(np.append(np.arange(0, 210) % 2, np.zeros(8)), np.ones(7))
     consensus_conn = struct_consensus(np_con_v1, distance=eu_distance, hemiid=hemiid.reshape(-1, 1))
     print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
     print("average_distance_with_filter: {}".format(np.mean(eu_distance * consensus_conn, where=(consensus_conn != 0))))

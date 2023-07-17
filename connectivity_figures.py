@@ -33,6 +33,7 @@ import glob
 from connectivity_read_files import find_files_with_common_name
 from netneurotools.plotting import plot_point_brain
 from netneurotools.metrics import degrees_und
+from connectivity_filtering import load_brainnetome_centroids
 
 
 def get_parser():
@@ -93,11 +94,14 @@ def plot_network(adj, coords):
     """
     fig = plt.figure(figsize=(11,5))
     ax = fig.add_subplot(121, projection='3d')
+    # remove nans from adj
+    adj[np.isnan(adj)] = 0
     # Identify edges in the network
     edges = np.where(adj != 0)
     print(edges[0].shape)
-    edge_cmap = plt.get_cmap('viridis')
-    norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
+    edge_cmap = plt.get_cmap('RdYlBu')
+    #norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
+    norm = matplotlib.colors.Normalize(vmin=-2, vmax=2)
     edge_val = edge_cmap(norm(adj[edges].flatten()))
     # Plot the edges
     for edge_i, edge_j, c in zip(edges[0], edges[1], edge_val):
@@ -112,10 +116,10 @@ def plot_network(adj, coords):
 
     ax2 = fig.add_subplot(122, projection='3d')
     # Identify edges in the network
-    edges = np.where(adj != 0)
-    edge_cmap = plt.get_cmap('viridis')
-    norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
-    edge_val = edge_cmap(norm(adj[edges].flatten()))
+    # edges = np.where(adj != 0)
+    # edge_cmap = plt.get_cmap('RdYlBu')
+    # norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
+    # edge_val = edge_cmap(norm(adj[edges].flatten()))
     # Plot the edges
     for edge_i, edge_j, c in zip(edges[0], edges[1], edge_val):
         x1, x2 = coords[edge_i, 0], coords[edge_j, 0]
@@ -126,7 +130,7 @@ def plot_network(adj, coords):
     filtered_coords = coords[edges[0]]
 
     ax2.scatter(filtered_coords[:, 0], filtered_coords[:, 1], filtered_coords[:, 2],
-                            c='k', alpha=0.8)
+                            c='gray', alpha=0.8, s=5)
     ax2.view_init(elev=90, azim=-90)
     ax2.axis('off')
     ax2.set_box_aspect((np.ptp(coords[:, 0]), np.ptp(coords[:, 1]), np.ptp(coords[:, 2])))
@@ -134,10 +138,6 @@ def plot_network(adj, coords):
     fig.tight_layout()
     plt.show()
 
-
-def load_brainnetome_centroids():
-    bn_centroids = get_centroids("/home/mafor/dev_tpil/tpil_network_analysis/labels/BNA-maxprob-thr0-1mm.nii.gz")
-    return bn_centroids
 
 def main():
     """
@@ -159,8 +159,11 @@ def main():
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
     np_con_v1 = np.dstack(
         list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject', 'roi']).to_numpy())))
-    connectivity_matrix_viewer(np_con_v1)
-    #plot_network(np_con_v1[:,:,0], load_brainnetome_centroids())
+
+
+    #connectivity_matrix_viewer(np_con_v1)
+    plot_network(np_con_v1[:,:,0], load_brainnetome_centroids())
+    #print(degrees_und(np_con_v1[:,:,:]))
     plot_point_brain(degrees_und(np_con_v1[:,:,0]), load_brainnetome_centroids(), views='ax', views_size=(8,4.8))
     plt.show()
 
