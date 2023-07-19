@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as colors
 import glob
+import bct
 from connectivity_read_files import find_files_with_common_name
 from connectivity_filtering import scilpy_filter
 from connectivity_filtering import load_brainnetome_centroids
@@ -109,6 +110,16 @@ def z_score(df_con_v1, df_clbp_v1):
     df_anor_mean = mean_matrix(df_anor)
     return df_anor_mean
 
+def nbs_data(df_con_v1, df_clbp_v1, save_path):
+    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
+    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
+    np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
+    pval, adj, null = bct.nbs.nbs_bct(np_con_v1, np_clbp_v1, thresh=2.5, tail='both', paired=False, verbose=True)
+    np.save(save_path + 'pval.npy', pval)
+    np.save(save_path + 'adj.npy', adj)
+    np.save(save_path + 'null.npy', null)
+    return pval, adj, null
+
 def prepare_data(df_connectivity_matrix, absolute=True):
     """
     Returns Data in the appropriate format for figure functions
@@ -157,26 +168,22 @@ def main():
     df_con_sim_v1 = df_con_sim[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_sim_v1 = df_clbp_sim[df_clbp['session'] == "v1"].drop("session", axis=1)
     
-    
+    pval, adj, null = nbs_data(df_con_v1, df_clbp_v1, save_path='/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_')
+
     df_con_mean = mean_matrix(df_con_v1)
     #df_con_hist = histogram(df_con_mean)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/con_hist.txt', df_con_hist, fmt='%1.3f')
     df_clbp_mean = mean_matrix(df_clbp_v1)
     #df_clbp_hist = histogram(df_clbp_mean)
     #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_hist.txt', df_clbp_hist, fmt='%1.3f')
     
-    df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
-    np_z_score_v1 = prepare_data(df_z_score_v1, absolute=False)
-    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
-    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
-    np_con_dist = distance_dependant_filter(np_con_v1)
-    #np_con_thresh = threshold_filter(np_con_v1)
-    np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
-    np_clbp_dist = distance_dependant_filter(np_clbp_v1)
+    #df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
+    #np_z_score_v1 = prepare_data(df_z_score_v1, absolute=False)
+    #np_con_dist = distance_dependant_filter(df_con_v1)
+    #np_clbp_dist = distance_dependant_filter(df_clbp_v1)
     #np_clbp_thresh = threshold_filter(np_clbp_v1)
-    mask = np_con_dist * np_clbp_dist
-    figure_data = mask * np_z_score_v1
-    plot_network(figure_data, load_brainnetome_centroids())
+    #mask = np_con_dist * np_clbp_dist
+    #figure_data = mask * np_z_score_v1
+    #plot_network(figure_data, load_brainnetome_centroids())
     
     
     #df_z_score_mask_hist = df_z_score_mask.values.flatten()

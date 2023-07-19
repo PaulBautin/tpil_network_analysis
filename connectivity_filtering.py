@@ -73,7 +73,7 @@ def get_parser():
 
 
 
-def load_brainnetome_centroids(image="/home/pabaua/dev_tpil/results/results_connectivity_prep/results/sub-pl007_ses-v1/Parcels_to_subject/sub-pl007_ses-v1__nativepro_seg_all.nii.gz"):
+def load_brainnetome_centroids(image="/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all.nii.gz"):
     """
     Loads Euclidean coordinates of nodes
     Parameters
@@ -87,7 +87,7 @@ def load_brainnetome_centroids(image="/home/pabaua/dev_tpil/results/results_conn
     bn_centroids = get_centroids(image)
     return bn_centroids
 
-def distance_dependant_filter(np_con_v1):
+def distance_dependant_filter(df_con_v1):
     """
     Calculates distance-dependent group consensus structural connectivity graph
     This filter is considered distance-dependant as it will divide data into bins (based on edge length percentile).
@@ -105,6 +105,8 @@ def distance_dependant_filter(np_con_v1):
     -------
     consensus_conn : (N, N) binary np.array matrix mask
     """
+    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
+    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
     # first has 8 on left and 7 on right
@@ -115,7 +117,7 @@ def distance_dependant_filter(np_con_v1):
     return consensus_conn
 
 
-def threshold_filter(np_con_v1):
+def threshold_filter(df_con_v1):
     """
     Uses a minimum spanning tree to ensure that no nodes are disconnected from the resulting thresholded graph.
     Keeps top 10% of connections
@@ -128,6 +130,8 @@ def threshold_filter(np_con_v1):
     -------
     threshold_conn : (N, N) binary np.array matrix mask
     """
+    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
+    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
     threshold_conn = threshold_network(np.mean(np_con_v1,axis=2), retain=10)
@@ -195,16 +199,14 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
 
-    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
-    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     #plt.imshow(np_con_v1[:,:,0])
     #plt.show()
 
-    dist_filter = distance_dependant_filter(np_con_v1)
+    dist_filter = distance_dependant_filter(df_con_v1)
     
-    thresh_filter = threshold_filter(np_con_v1)
+    thresh_filter = threshold_filter(df_con_v1)
 
-    scil_filter = scilpy_filter(np_con_v1)
+    scil_filter = scilpy_filter(df_con_v1)
 
 if __name__ == "__main__":
     main()
