@@ -22,13 +22,6 @@ from __future__ import division
 import pandas as pd
 import numpy as np
 import os
-import networkx as nx
-import argparse
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as colors
 import glob
 
 def find_files_with_common_name(directory, common_name):
