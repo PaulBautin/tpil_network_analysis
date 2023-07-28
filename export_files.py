@@ -10,9 +10,12 @@ def extract_files_from_folder(folder_path):
     root = folder_path
     for dir in os.listdir(folder_path):
         for filename in os.listdir(os.path.join(root, dir, 'DTI_metrics')):
-            if filename.endswith('fa.nii.gz'):
+            if filename.endswith('md.nii.gz'):
                 source_file = os.path.join(root, dir, 'DTI_metrics', filename)
                 
+                # Replacing 'md' with 'fa' in the destination filename
+                destination_filename = filename.replace('md', 'fa')
+
                 # Extracting v1, v2, or v3 from the filename
                 version = None
                 if 'v1' in filename:
@@ -27,7 +30,7 @@ def extract_files_from_folder(folder_path):
                     version_folder = os.path.join(destination_folder, version)
                     os.makedirs(version_folder, exist_ok=True)
                     
-                    destination_file = os.path.join(version_folder, f"clbp_{filename}")
+                    destination_file = os.path.join(version_folder, f"clbp_{destination_filename}")
                     print(f"Copying file: {source_file} to {destination_file}")
                     shutil.copy(source_file, destination_file)
 

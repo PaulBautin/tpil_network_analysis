@@ -114,7 +114,7 @@ def nbs_data(df_con_v1, df_clbp_v1, save_path):
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
     np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
-    pval, adj, null = bct.nbs.nbs_bct(np_con_v1, np_clbp_v1, thresh=2.5, tail='both', paired=False, verbose=True)
+    pval, adj, null = bct.nbs.nbs_bct(np_con_v1, np_clbp_v1, thresh=2.0, tail='both', paired=False, verbose=True)
     np.save(save_path + 'pval.npy', pval)
     np.save(save_path + 'adj.npy', adj)
     np.save(save_path + 'null.npy', null)
@@ -168,13 +168,19 @@ def main():
     df_con_sim_v1 = df_con_sim[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_sim_v1 = df_clbp_sim[df_clbp['session'] == "v1"].drop("session", axis=1)
     
-    #pval, adj, null = nbs_data(df_con_v1, df_clbp_v1, save_path='/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_')
+    pval, adj, null = nbs_data(df_con_v1, df_clbp_v1, save_path='/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_')
+    adj_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_adj.npy')
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/adj_array.txt', adj_array, fmt='%1.3f')
+    null_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_null.npy')
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/null_array.txt', null_array, fmt='%1.3f')
+    pval_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_pval.npy')
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/pval_array.txt', pval_array, fmt='%1.3f')
 
     df_con_mean = mean_matrix(df_con_v1)
     #df_con_hist = histogram(df_con_mean)
     df_clbp_mean = mean_matrix(df_clbp_v1)
     #df_clbp_hist = histogram(df_clbp_mean)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/clbp_hist.txt', df_clbp_hist, fmt='%1.3f')
+    #np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/data/clbp_hist.txt', df_clbp_hist, fmt='%1.3f')
     
     #df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
     #np_z_score_v1 = prepare_data(df_z_score_v1, absolute=False)
@@ -187,7 +193,7 @@ def main():
     
     
     #df_z_score_mask_hist = df_z_score_mask.values.flatten()
-    #np.savetxt('/home/mafor/dev_tpil/tpil_network_analysis/data/sim_filtery.csv', df_z_score_mask_hist, fmt='%1.3f')
+    #np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/data/sim_filtery.csv', df_z_score_mask_hist, fmt='%1.3f')
     #df_graph_z_score_mask = circle_graph(df_z_score_mask)
     #plot_network(df_z_score_mask, load_brainnetome_centroids())
     #plt.show()

@@ -49,3 +49,6 @@ tbss_4_prestats 0.2
 # -t : Contrast file
 # -n : Number of permutations
 # --T2 : Threshold-Free Cluster Enhancement option
+
+### tbss_tstat1 = CLBP > CON
+### tbss_tstat2 = CON > CLBP
