@@ -71,11 +71,19 @@ def get_parser():
     return parser
 
 def connectivity_matrix_viewer(conn_matrix):
+    """
+    Prints connectivity_matrix
+
+    Parameters
+    ----------
+    conn_matrix: (N, N, S) np.array
+
+    Returns
+    -------
+    fig : :class:`matplotlib.figure.Figure`
+    """
     plt.imshow(np.log(conn_matrix[:,:,0]), cmap='RdYlBu')
     plt.show()
-
-
-
 
 def plot_network(adj, coords):
     """

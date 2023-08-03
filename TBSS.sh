@@ -52,3 +52,10 @@ tbss_4_prestats 0.2
 
 ### tbss_tstat1 = CLBP > CON
 ### tbss_tstat2 = CON > CLBP
+
+########################################################################
+#cd /mnt/d/Marc-Antoine/TBSS/v*/stats
+#cluster --in=tbss_tstat1.nii.gz --thresh=2.0 --oindex=/mnt/d/Marc-Antoine/TBSS/cluster_mask/*/cluster1_index_v*.nii.gz
+#fslmaths cluster1_index_v*.nii.gz -thr 4 -bin cluster_mask1_min4voxels.nii_v*.gz
+#cd /mnt/d/Marc-Antoine/TBSS/cluster_mask/*
+#fslmaths cluster1_index_v1.nii.gz -mul cluster1_index_v2.nii.gz -mul cluster1_index_v3.nii.gz cluster_intersection1_mini4voxels.nii.gz

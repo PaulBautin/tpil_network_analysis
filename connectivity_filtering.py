@@ -87,7 +87,7 @@ def load_brainnetome_centroids(image="/home/mafor/dev_tpil/tpil_networks/tpil_ne
     bn_centroids = get_centroids(image)
     return bn_centroids
 
-def distance_dependant_filter(df_con_v1):
+def distance_dependant_filter(df_connectivity_matrix):
     """
     Calculates distance-dependent group consensus structural connectivity graph
     This filter is considered distance-dependant as it will divide data into bins (based on edge length percentile).
@@ -98,18 +98,16 @@ def distance_dependant_filter(df_con_v1):
 
     Parameters
     ----------
-    np_connectivity_matrix : (N, N, S) array_like, pairwise distance matrix, (N, 1) vector identifying right hemisphere (0)
-    and left hemisphere (1)
-
+    df_connectivity_matrix : (N, NxS) connectivity matrix pandas Dataframe, where N is the number of nodes and S the number of subjects
     Returns
     -------
     consensus_conn : (N, N) binary np.array matrix mask
     """
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
-    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
+    np_con_v1 = np.dstack(list(df_connectivity_matrix.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
-    # first has 8 on left and 7 on right
+    # pairwise distance matrix, (N, 1) vector identifying right hemisphere (0)and left hemisphere (1) first has 8 on left and 7 on right
     hemiid = np.append(np.append(np.arange(0, 210) % 2, np.zeros(8)), np.ones(7))
     consensus_conn = struct_consensus(np_con_v1, distance=eu_distance, hemiid=hemiid.reshape(-1, 1))
     print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
@@ -117,21 +115,21 @@ def distance_dependant_filter(df_con_v1):
     return consensus_conn
 
 
-def threshold_filter(df_con_v1):
+def threshold_filter(df_connectivity_matrix):
     """
     Uses a minimum spanning tree to ensure that no nodes are disconnected from the resulting thresholded graph.
     Keeps top 10% of connections
 
     Parameters
     ----------
-    np_con_v1 : (N, N) connectivity matrix, percent connection to retain
+    df_connectivity_matrix : (N, N) connectivity matrix, pandas Dataframe, percent connection to retain
 
     Returns
     -------
     threshold_conn : (N, N) binary np.array matrix mask
     """
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
-    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
+    np_con_v1 = np.dstack(list(df_connectivity_matrix.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
     threshold_conn = threshold_network(np.mean(np_con_v1,axis=2), retain=10)
@@ -167,18 +165,19 @@ def scilpy_filter(df_connectivity_matrix):
 
     Parameters
     ----------
-    df_connectivity_matrix : (N, N) connectivity matrix, pandas DataFrame
+    df_connectivity_matrix :  (N, N) connectivity matrix pandas Dataframe, where N is the number of nodes 
 
     Returns
     -------
-    mask_data : (N, N) binary matrix mask, pandas DataFrame
+    mask_data : (N, N) filtered conenctivity matrix, pandas DataFrame
     """
-    mask_con_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_streamline.npy')[:-3,:-3]
-    mask_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_streamline.npy')[:-3,:-3]
-    mask_con_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/con_mask_len.npy')[:-3,:-3]
-    mask_clbp_len = np.load('/home/mafor/dev_tpil/tpil_network_analysis/results/results_connectflow/clbp_mask_len.npy')[:-3,:-3]
+    mask_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_mask_sc.npy')
+    mask_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_mask_sc.npy')
+    mask_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_mask_len.npy')
+    mask_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_mask_len.npy')
+    df_mult = df_connectivity_matrix.set_index(["subject","roi"]) # step necessary to apply z-score equation on every subject
     mask = mask_con_len * mask_clbp_len * mask_con_sc * mask_clbp_sc
-    mask_data = df_connectivity_matrix * mask
+    mask_data = df_mult * mask
     return mask_data
 
 

@@ -31,6 +31,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 import glob
 import bct
+import networkx as nx
 from connectivity_read_files import find_files_with_common_name
 from connectivity_filtering import scilpy_filter
 from connectivity_filtering import load_brainnetome_centroids
@@ -39,7 +40,9 @@ from connectivity_filtering import threshold_filter
 from connectivity_graphing import circle_graph
 from connectivity_graphing import histogram
 from connectivity_figures import plot_network
-from connectivity_filtering import load_brainnetome_centroids
+from graph_theory_functions import networkx_degree_centrality
+from graph_theory_functions import z_score_centrality
+from graph_theory_functions import networkx_graph_convertor
 
 def get_parser():
     """parser function"""
@@ -111,6 +114,25 @@ def z_score(df_con_v1, df_clbp_v1):
     return df_anor_mean
 
 def nbs_data(df_con_v1, df_clbp_v1, save_path):
+    """
+    Performs Network-based statistics between clbp and control group and save the results in results_nbs
+    Zalesky A, Fornito A, Bullmore ET (2010) Network-based statistic: Identifying differences in brain networks. NeuroImage.
+    10.1016/j.neuroimage.2010.06.041
+
+    Parameters
+    ----------
+    df_con_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clbp_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    save_path : directory ex: '/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_'
+
+    Returns
+    -------
+    pval : Cx1 np.ndarray. A vector of corrected p-values for each component of the networksidentified. If at least one p-value 
+    is less than alpha, the omnibus null hypothesis can be rejected at alpha significance. The nullhypothesis is that the value 
+    of the connectivity from each edge hasequal mean across the two populations.
+    adj : IxIxC np.ndarray. An adjacency matrix identifying the edges comprising each component.edges are assigned indexed values.
+    null : Kx1 np.ndarray. A vector of K sampled from the null distribution of maximal component size.
+    """
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
     np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
     np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
@@ -132,15 +154,15 @@ def prepare_data(df_connectivity_matrix, absolute=True):
     -------
     np_connectivity_matrix : (N, N) array_like
     """
-    df_connectivity_matrix[np.isnan(df_connectivity_matrix)] = 0 
-    np_connectivity_matrix = df_connectivity_matrix.values
+    np_connectivity_matrix = df_connectivity_matrix.values()
+    np_connectivity_matrix[np.isnan(np_connectivity_matrix)] = 0 
     if absolute:
         np_connectivity_matrix = np.triu(abs(np_connectivity_matrix))
     else:
         np_connectivity_matrix = np.triu(np_connectivity_matrix)
     return np_connectivity_matrix
 
- 
+
 def main():
     """
     main function, gather stats and call plots
@@ -156,53 +178,57 @@ def main():
     df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
 
-    # work only on one session at a time
-    df_con_v1 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
+    ### work only on one session at a time
+    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
+    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
 
     ### Get similarity data
-    df_con_sim = find_files_with_common_name(path_results_con, "sim.csv")
-    df_clbp_sim = find_files_with_common_name(path_results_clbp, "sim.csv")
+    df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
+    df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
 
-    # work only on one session at a time
-    df_con_sim_v1 = df_con_sim[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_sim_v1 = df_clbp_sim[df_clbp['session'] == "v1"].drop("session", axis=1)
+    ### work only on one session at a time
+    df_con_sc_v1 = df_con_sc[df_con['session'] == "v1"].drop("session", axis=1)
+    df_clbp_sc_v1 = df_clbp_sc[df_clbp['session'] == "v1"].drop("session", axis=1)
     
-    pval, adj, null = nbs_data(df_con_v1, df_clbp_v1, save_path='/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_')
-    adj_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_adj.npy')
-    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/adj_array.txt', adj_array, fmt='%1.3f')
-    null_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_null.npy')
-    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/null_array.txt', null_array, fmt='%1.3f')
-    pval_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_pval.npy')
-    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/pval_array.txt', pval_array, fmt='%1.3f')
+    """
+    To create a Networkx graph of z-score degree centrality of Commit2_weights.csv of clbp and con at v1 after scilpy filtering
+    """
+    # ### Scilpy filter on commit2_weights data
+    # mask_clbp_commit2 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
+    # mask_con_commit2 = df_con_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
+    # ### Degree centrality
+    # df_con_centrality = mask_con_commit2.groupby('subject').apply(lambda x:networkx_degree_centrality(x))
+    # df_con_centrality.index.names = ['subject', 'roi']
+    # df_clbp_centrality = mask_clbp_commit2.groupby('subject').apply(lambda x:networkx_degree_centrality(x))
+    # df_clbp_centrality.index.names = ['subject', 'roi']
+    # ### Z-score of degree centrality for df_weighted_nodes of networkx_graph_convertor
+    # df_z_score_nx = z_score_centrality(df_con_centrality, df_clbp_centrality)
+    # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
+    # df_clbp_mean_filter = mean_matrix(mask_clbp_commit2)
+    # ### Networkx graph of degree centrality of commit2_weights.csv nodes filtered by scilpy
+    # networkx_graph_convertor(df_clbp_mean_filter, df_z_score_nx)
 
-    df_con_mean = mean_matrix(df_con_v1)
-    #df_con_hist = histogram(df_con_mean)
-    df_clbp_mean = mean_matrix(df_clbp_v1)
-    #df_clbp_hist = histogram(df_clbp_mean)
-    #np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/data/clbp_hist.txt', df_clbp_hist, fmt='%1.3f')
-    
+    """
+    To do NBS analysis of clbp and con Commit2_weights.csv and store results in NBS_results
+    """    
+    # pval, adj, null = nbs_data(df_con_v1, df_clbp_v1, save_path='/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_')
+    # adj_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_adj.npy')
+    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/adj_array.txt', adj_array, fmt='%1.3f')
+    # null_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_null.npy')
+    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/null_array.txt', null_array, fmt='%1.3f')
+    # pval_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_pval.npy')
+    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/pval_array.txt', pval_array, fmt='%1.3f')
+
+    """
+    To create a netowrk graph of z-score connectivity of Commit2_weights.csv of clbp and con at v1 after distance-dependent filtering
+    """        
     #df_z_score_v1 = z_score(df_con_v1, df_clbp_v1)
     #np_z_score_v1 = prepare_data(df_z_score_v1, absolute=False)
     #np_con_dist = distance_dependant_filter(df_con_v1)
     #np_clbp_dist = distance_dependant_filter(df_clbp_v1)
-    #np_clbp_thresh = threshold_filter(np_clbp_v1)
     #mask = np_con_dist * np_clbp_dist
     #figure_data = mask * np_z_score_v1
     #plot_network(figure_data, load_brainnetome_centroids())
-    
-    
-    #df_z_score_mask_hist = df_z_score_mask.values.flatten()
-    #np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/data/sim_filtery.csv', df_z_score_mask_hist, fmt='%1.3f')
-    #df_graph_z_score_mask = circle_graph(df_z_score_mask)
-    #plot_network(df_z_score_mask, load_brainnetome_centroids())
-    #plt.show()
-
-    #plt.imshow(df_z_score_dist, cmap='bwr', norm = colors.TwoSlopeNorm(vmin=-2, vcenter=0, vmax=20))
-    #plt.colorbar()
-    #plt.show()
-
-
 
 if __name__ == "__main__":
     main()
