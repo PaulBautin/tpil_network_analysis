@@ -23,8 +23,8 @@ import pandas as pd
 import numpy as np
 import os
 import argparse
-import matplotlib
-matplotlib.use('TkAgg')
+import matplotlib as mpl
+mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as colors
@@ -131,7 +131,6 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes):
     # add nodes to the graph with labels from the .txt file and set their attributes
     dict_coords = {i: coordinates_array[i,:2] for i in range(len(labels))}
     dict_labels = {i: labels[i] for i in range(len(labels))}
-
     # add weighted edges to the graph based on the connectivity NumPy array
     num_nodes = len(labels)
     for i in range(num_nodes):
@@ -141,25 +140,18 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes):
             if weight != 0:
                 # add the weighted edge between nodes with the weight from the NumPy array
                 G.add_edge(i, j, weight=weight)
-    # convert df_weighted_nodes to a dictionary
-    node_values_dict = df_weighted_nodes[0].to_dict()
-    # map the values to colors for each node in the graph
-    node_colors = [colormap(node_values_dict.get(label, 0.0)) for label in labels]
-    # draw the networkx graph with varying node colors
-    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=node_colors, cmap=colormap)
-    sm = plt.cm.ScalarMappable(cmap=colormap, norm=plt.Normalize(vmin=-2, vmax=2))
-    sm.set_array([])
-    # set colorbar
-    cbar = plt.colorbar(sm)
-    cbar.set_label('Color Intensity')
+    # graph according to node position and color intensity
+    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=df_weighted_nodes['centrality'], cmap=colormap, vmin=-2,vmax=2)
+    #set colorbar
+    plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=-2, vmax=2), cmap=colormap))
+    #cbar.set_label('Color Intensity')
     plt.axis('equal')
     plt.show()
-    
 
 def networkx_degree_centrality(df_connectivity_matrix):
     """
     Creates a networkx graph from sub-pl007_ses-v1__nativepro_seg_all_atlas.txt labels and load_brainnetome_centroids()
-    coordinates. Calculates centrality metrics of nodes and stores them in a pandas DataFrame.
+    coordinates. Calculates degree centrality of nodes and stores them in a pandas DataFrame.
 
     Parameters
     ----------
@@ -195,16 +187,127 @@ def networkx_degree_centrality(df_connectivity_matrix):
     dict_centrality = nx.degree_centrality(G)
     return pd.DataFrame.from_dict(dict_centrality, orient='index')
 
-def centrality_analysis(nx_graph):
-    degree_centrality = nx.degree_centrality(nx_graph, weight='weight')
-    print("degree centrality:", degree_centrality)
-    betweenness_centrality = nx.betweenness_centrality(nx_graph, weight='weight')
-    print("betweenness centrality", betweenness_centrality)
-    eigenvector_centrality = nx.eigenvector_centrality(nx_graph, weight='weight')
-    print("eigenvector centrality", eigenvector_centrality)
-    clustering_coefficient = nx.clustering(nx_graph, weight='weight')    
-    print("clustering coefficient", clustering_coefficient)
+def networkx_betweenness_centrality(df_connectivity_matrix):
+    """
+    Creates a networkx graph from sub-pl007_ses-v1__nativepro_seg_all_atlas.txt labels and load_brainnetome_centroids()
+    coordinates. Calculates betweenness centrality of nodes and stores them in a pandas DataFrame.
 
+    Parameters
+    ----------
+    df_connectivity_matrix : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    pd.DataFrame.from_dict(dict_centrality, orient='index') : (1, N) pandas DataFrame with centrality metrics for each labeled node N
+    """
+    df_connectivity_matrix = mean_matrix(df_connectivity_matrix)
+    df_inverse_connectivity_matrix = 1 / df_connectivity_matrix
+    # convert DataFrame to a NumPy array
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    np_inverse_connectivity_matrix = df_inverse_connectivity_matrix.to_numpy()
+    string_inverse_connectivity_matrix = np.array2string(np_inverse_connectivity_matrix)
+    # read the labels from the .txt file
+    with open('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all_atlas.txt', 'r') as labels_file:
+        labels = [line.strip() for line in labels_file]
+    # load the node centroids using the provided function
+    coordinates_array = load_brainnetome_centroids()
+    # create an empty graph using NetworkX
+    G = nx.Graph()
+    # add nodes to the graph with labels from the .txt file and set their attributes
+    G.add_nodes_from(labels)
+    dict_coords = {i: coordinates_array[i,:2] for i in range(len(labels))}
+    dict_labels = {i: labels[i] for i in range(len(labels))}
+    
+    num_nodes = len(labels)
+    for i in range(num_nodes):
+        for j in range(i + 1, num_nodes):
+            # check if the weight is non-zero (i.e., there's a connection)
+            weight = np_connectivity_matrix[i, j]
+            if weight != 0:
+                # add the weighted edge between nodes with the weight from the NumPy array
+                G.add_edge(labels[i], labels[j], weight=weight)
+    dict_centrality = nx.betweenness_centrality(G, weight=string_inverse_connectivity_matrix)
+    return pd.DataFrame.from_dict(dict_centrality, orient='index')
+
+def networkx_eigenvector_centrality(df_connectivity_matrix):
+    """
+    Creates a networkx graph from sub-pl007_ses-v1__nativepro_seg_all_atlas.txt labels and load_brainnetome_centroids()
+    coordinates. Calculates eigenvector centrality of nodes and stores them in a pandas DataFrame.
+
+    Parameters
+    ----------
+    df_connectivity_matrix : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    pd.DataFrame.from_dict(dict_centrality, orient='index') : (1, N) pandas DataFrame with centrality metrics for each labeled node N
+    """
+    df_connectivity_matrix = mean_matrix(df_connectivity_matrix)
+    # convert DataFrame to a NumPy array
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    string_connectivity_matrix = np.array2string(np_connectivity_matrix)
+    # read the labels from the .txt file
+    with open('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all_atlas.txt', 'r') as labels_file:
+        labels = [line.strip() for line in labels_file]
+    # load the node centroids using the provided function
+    coordinates_array = load_brainnetome_centroids()
+    # create an empty graph using NetworkX
+    G = nx.Graph()
+    # add nodes to the graph with labels from the .txt file and set their attributes
+    G.add_nodes_from(labels)
+    dict_coords = {i: coordinates_array[i,:2] for i in range(len(labels))}
+    dict_labels = {i: labels[i] for i in range(len(labels))}
+    
+    num_nodes = len(labels)
+    for i in range(num_nodes):
+        for j in range(i + 1, num_nodes):
+            # check if the weight is non-zero (i.e., there's a connection)
+            weight = np_connectivity_matrix[i, j]
+            if weight != 0:
+                # add the weighted edge between nodes with the weight from the NumPy array
+                G.add_edge(labels[i], labels[j], weight=weight)
+    dict_centrality = nx.eigenvector_centrality(G, weight=string_connectivity_matrix)
+    return pd.DataFrame.from_dict(dict_centrality, orient='index')
+
+def networkx_cluster_coefficient(df_connectivity_matrix):
+    """
+    Creates a networkx graph from sub-pl007_ses-v1__nativepro_seg_all_atlas.txt labels and load_brainnetome_centroids()
+    coordinates. Calculates cluster coefficient of nodes and stores them in a pandas DataFrame.
+
+    Parameters
+    ----------
+    df_connectivity_matrix : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    pd.DataFrame.from_dict(dict_centrality, orient='index') : (1, N) pandas DataFrame with centrality metrics for each labeled node N
+    """
+    df_connectivity_matrix = mean_matrix(df_connectivity_matrix)
+    # convert DataFrame to a NumPy array
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    string_connectivity_matrix = np.array2string(np_connectivity_matrix)
+    # read the labels from the .txt file
+    with open('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all_atlas.txt', 'r') as labels_file:
+        labels = [line.strip() for line in labels_file]
+    # load the node centroids using the provided function
+    coordinates_array = load_brainnetome_centroids()
+    # create an empty graph using NetworkX
+    G = nx.Graph()
+    # add nodes to the graph with labels from the .txt file and set their attributes
+    G.add_nodes_from(labels)
+    dict_coords = {i: coordinates_array[i,:2] for i in range(len(labels))}
+    dict_labels = {i: labels[i] for i in range(len(labels))}
+    
+    num_nodes = len(labels)
+    for i in range(num_nodes):
+        for j in range(i + 1, num_nodes):
+            # check if the weight is non-zero (i.e., there's a connection)
+            weight = np_connectivity_matrix[i, j]
+            if weight != 0:
+                # add the weighted edge between nodes with the weight from the NumPy array
+                G.add_edge(labels[i], labels[j], weight=weight)
+    dict_centrality = nx.clustering(G, weight=string_connectivity_matrix)
+    return pd.DataFrame.from_dict(dict_centrality, orient='index')
 
 def main():
     """
@@ -226,11 +329,10 @@ def main():
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
 
     ### Measure degree centrality of every node and store in a pandas DataFrame compatible with z_score_centrality
-    df_con_centrality = df_con_v1.groupby('subject').apply(lambda x:networkx_degree_centrality(x))
+    df_con_centrality = df_con_v1.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
     df_con_centrality.index.names = ['subject', 'roi']
-    df_clbp_centrality = df_clbp_v1.groupby('subject').apply(lambda x:networkx_degree_centrality(x))
+    df_clbp_centrality = df_clbp_v1.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
     df_clbp_centrality.index.names = ['subject', 'roi']
-
     ### Calculate the z-score for every node between clbp and con
     z_score_central = z_score_centrality(df_con_centrality, df_clbp_centrality)
     

@@ -41,6 +41,9 @@ from connectivity_graphing import circle_graph
 from connectivity_graphing import histogram
 from connectivity_figures import plot_network
 from graph_theory_functions import networkx_degree_centrality
+from graph_theory_functions import networkx_betweenness_centrality
+from graph_theory_functions import networkx_eigenvector_centrality
+from graph_theory_functions import networkx_cluster_coefficient
 from graph_theory_functions import z_score_centrality
 from graph_theory_functions import networkx_graph_convertor
 
@@ -179,34 +182,36 @@ def main():
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
 
     ### work only on one session at a time
-    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
+    df_con_v1 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
+    df_clbp_v1 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
 
-    ### Get similarity data
-    df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
-    df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
+    # ### Get similarity data
+    # df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
+    # df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
 
-    ### work only on one session at a time
-    df_con_sc_v1 = df_con_sc[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_sc_v1 = df_clbp_sc[df_clbp['session'] == "v1"].drop("session", axis=1)
-    
+    # ### work only on one session at a time
+    # df_con_sc_v1 = df_con_sc[df_con['session'] == "v1"].drop("session", axis=1)
+    # df_clbp_sc_v1 = df_clbp_sc[df_clbp['session'] == "v1"].drop("session", axis=1)
+
     """
     To create a Networkx graph of z-score degree centrality of Commit2_weights.csv of clbp and con at v1 after scilpy filtering
     """
-    # ### Scilpy filter on commit2_weights data
-    # mask_clbp_commit2 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
-    # mask_con_commit2 = df_con_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
-    # ### Degree centrality
-    # df_con_centrality = mask_con_commit2.groupby('subject').apply(lambda x:networkx_degree_centrality(x))
-    # df_con_centrality.index.names = ['subject', 'roi']
-    # df_clbp_centrality = mask_clbp_commit2.groupby('subject').apply(lambda x:networkx_degree_centrality(x))
-    # df_clbp_centrality.index.names = ['subject', 'roi']
-    # ### Z-score of degree centrality for df_weighted_nodes of networkx_graph_convertor
-    # df_z_score_nx = z_score_centrality(df_con_centrality, df_clbp_centrality)
-    # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
-    # df_clbp_mean_filter = mean_matrix(mask_clbp_commit2)
-    # ### Networkx graph of degree centrality of commit2_weights.csv nodes filtered by scilpy
-    # networkx_graph_convertor(df_clbp_mean_filter, df_z_score_nx)
+    ### Scilpy filter on commit2_weights data
+    mask_clbp_commit2 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
+    mask_con_commit2 = df_con_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
+    ### Betweenness centrality
+    df_con_centrality = mask_con_commit2.groupby('subject').apply(lambda x:networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
+    df_con_centrality.index.names = ['subject', 'roi']
+    df_clbp_centrality = mask_clbp_commit2.groupby('subject').apply(lambda x:networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
+    df_clbp_centrality.index.names = ['subject', 'roi']
+    ### Z-score of degree centrality for df_weighted_nodes of networkx_graph_convertor
+    df_z_score_nx = z_score_centrality(df_con_centrality, df_clbp_centrality)
+    print(df_z_score_nx)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/df_z_score_nx.txt', df_z_score_nx, fmt='%1.3f')
+    ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
+    df_clbp_mean_filter = mean_matrix(mask_clbp_commit2)
+    ### Networkx graph of degree centrality of commit2_weights.csv nodes filtered by scilpy
+    networkx_graph_convertor(df_clbp_mean_filter, df_z_score_nx)
 
     """
     To do NBS analysis of clbp and con Commit2_weights.csv and store results in NBS_results
