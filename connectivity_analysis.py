@@ -43,6 +43,11 @@ from connectivity_filtering import threshold_filter
 from connectivity_graphing import circle_graph
 from connectivity_graphing import histogram
 from connectivity_figures import plot_network
+from connectivity_stats import mean_matrix
+from connectivity_stats import z_score
+from connectivity_stats import nbs_data
+from connectivity_stats import paired_t_test
+from connectivity_stats import friedman
 from graph_theory_functions import networkx_degree_centrality
 from graph_theory_functions import networkx_betweenness_centrality
 from graph_theory_functions import networkx_eigenvector_centrality
@@ -84,70 +89,6 @@ def get_parser():
     )
     return parser
 
-def mean_matrix(df_connectivity_matrix):
-    """
-    Returns mean value of all subjects for a given edge
-
-    Parameters
-    ----------
-    df_connectivity_matrix : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
-    
-    Returns
-    -------
-    mean_matrix : (N, N) pandas DataFrame
-    """
-    mean_matrix = df_connectivity_matrix.groupby("roi").mean()  
-    return mean_matrix
-
-def z_score(df_con_v1, df_clbp_v1):
-    """
-    Returns mean z-score between clbp and con data for a given edge
-
-    Parameters
-    ----------
-    df_con_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
-    df_clbp_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
-
-    Returns
-    -------
-    df_anor_mean : (N, N) pandas DataFrame
-    """
-    df_con_mean = mean_matrix(df_con_v1)
-    df_con_std = df_con_v1.groupby("roi").std()
-    #df_clbp = df_clbp_v1.set_index(df_clbp_v1.index.names) # step necessary to apply z-score equation on every subject
-    df_anor = (df_clbp_v1 - df_con_mean) / df_con_std
-    df_anor_mean = mean_matrix(df_anor)
-    return df_anor_mean
-
-def nbs_data(df_con_v1, df_clbp_v1, save_path):
-    """
-    Performs Network-based statistics between clbp and control group and save the results in results_nbs
-    Zalesky A, Fornito A, Bullmore ET (2010) Network-based statistic: Identifying differences in brain networks. NeuroImage.
-    10.1016/j.neuroimage.2010.06.041
-
-    Parameters
-    ----------
-    df_con_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
-    df_clbp_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
-    save_path : directory ex: '/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-07-11_v1_'
-
-    Returns
-    -------
-    pval : Cx1 np.ndarray. A vector of corrected p-values for each component of the networksidentified. If at least one p-value 
-    is less than alpha, the omnibus null hypothesis can be rejected at alpha significance. The nullhypothesis is that the value 
-    of the connectivity from each edge hasequal mean across the two populations.
-    adj : IxIxC np.ndarray. An adjacency matrix identifying the edges comprising each component.edges are assigned indexed values.
-    null : Kx1 np.ndarray. A vector of K sampled from the null distribution of maximal component size.
-    """
-    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
-    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
-    np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
-    pval, adj, null = bct.nbs.nbs_bct(np_con_v1, np_clbp_v1, thresh=2.0, tail='both', paired=False, verbose=True)
-    np.save(save_path + 'pval.npy', pval)
-    np.save(save_path + 'adj.npy', adj)
-    np.save(save_path + 'null.npy', null)
-    return pval, adj, null
-
 def prepare_data(df_connectivity_matrix, absolute=True):
     """
     Returns Data in the appropriate format for figure functions
@@ -180,7 +121,7 @@ def data_cleaner(df_connectivity_matrix):
     -------
     df_connectivity_matrix : (NxS-X, N) pandas DataFrame
     """
-    subjects_to_remove = ['sub-pl008', 'sub-pl037', 'sub-pl039'] # Need to hard-code this!
+    subjects_to_remove = ['sub-pl008', 'sub-pl016', 'sub-pl037', 'sub-pl039'] # Need to hard-code this!
     df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(subjects_to_remove)]
     return(df_cleaned)
 
@@ -220,7 +161,7 @@ def main():
     # ### Scilpy filter on commit2_weights data
     # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
     # mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x))
-    
+    # mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x))
     # ### Degree centrality
     # df_clbp_centrality_v1 = mask_clbp_commit2_v1.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
     # df_clbp_centrality_v1.index.names = ['subject', 'roi']
@@ -228,26 +169,25 @@ def main():
     # df_clbp_centrality_v2 = mask_clbp_commit2_v2.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
     # df_clbp_centrality_v2.index.names = ['subject', 'roi']
     # df_clean_centrality_v2 = data_cleaner(df_clbp_centrality_v2)
+    # df_clbp_centrality_v3 = mask_clbp_commit2_v3.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
+    # df_clbp_centrality_v3.index.names = ['subject', 'roi']
+    # df_clean_centrality_v3 = data_cleaner(df_clbp_centrality_v3)
+    
+    # ### Calculate Friedman test
+    # stat, pval = friedman(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3)
+    
     # ### Calculate paired t-tests for each ROI
-    # merged_df = pd.merge(df_clean_centrality_v1, df_clean_centrality_v2, on=['subject', 'roi'], suffixes=('_v1', '_v2'))
-    # results = {}
-    # for roi, data in merged_df.groupby('roi'):
-    #     t_statistic, p_value = ttest_rel(data['centrality_v1'], data['centrality_v2'])
-    #     results[roi] = {'t_statistic': t_statistic, 'p_value': p_value}
-    # ### Create a new DataFrame to store the t-test results
-    # df_t_test_results = pd.DataFrame(results).T
-    # print(df_t_test_results)
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/t_test_results.txt', df_t_test_results['t_statistic'], fmt='%1.5f')
+    # t_result = paired_t_test(df_clean_centrality_v1, df_clean_centrality_v2)
     # ### Load numpy array of v1 and v2 and calculate delta
     # delta_v2_v1 = df_clean_centrality_v2 - df_clean_centrality_v1
     
     # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
     # df_clbp_mean_filter = mean_matrix(mask_clbp_commit2_v1)
-    # df_clbp_mean_centrality = mean_matrix(delta_v2_v1)
+    # df_clbp_mean_centrality = mean_matrix(stat)
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/delta_v2_v1.txt', df_clbp_mean_centrality, fmt='%1.5f')
     
     # ### Networkx graph of degree centrality of commit2_weights.csv nodes filtered by scilpy
-    # networkx_graph_convertor(df_clbp_mean_filter, df_t_test_results)
+    # networkx_graph_convertor(df_clbp_mean_filter, df_clbp_mean_centrality)
 
     """
     To create a Networkx graph of z-score degree centrality of Commit2_weights.csv of clbp and con at v1 after scilpy filtering
@@ -302,29 +242,29 @@ def main():
     # ### Scilpy filter on commit2_weights data
     # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
     # mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x))
-    # mask_clbp_commit2_v1.index.names = ['subject', 'roi']
-    # mask_clbp_commit2_v2.index.names = ['subject', 'roi']
-    # df_clean_v1 = data_cleaner(mask_clbp_commit2_v1)
-    # df_clean_v2 = data_cleaner(mask_clbp_commit2_v2)
-    # ### Calculate paired t-tests for each ROI
-    # merged_df = pd.merge(df_clean_v1, df_clean_v2, on=['subject', 'roi'], suffixes=('_v1', '_v2'))
-    # results = {}
-    # for roi, data in merged_df.groupby('roi'):
-    #     t_statistic, p_value = ttest_rel(data['centrality_v1'], data['centrality_v2'])
-    #     results[roi] = {'t_statistic': t_statistic, 'p_value': p_value}
-    # ### Create a new DataFrame to store the t-test results
-    # df_t_test_results = pd.DataFrame(results).T
-    # print(df_t_test_results)
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/t_test_results.txt', df_t_test_results['t_statistic'], fmt='%1.5f')
+    # mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x))
+    # mask_clbp_commit2_v1.index.names = ['subject', 'unused', 'roi']
+    # mask_clbp_commit2_v2.index.names = ['subject', 'unused', 'roi']
+    # mask_clbp_commit2_v3.index.names = ['subject', 'unused', 'roi']
+    # df_reset_v1 = mask_clbp_commit2_v1.droplevel(level='unused')
+    # df_reset_v2 = mask_clbp_commit2_v2.droplevel(level='unused')
+    # df_reset_v3 = mask_clbp_commit2_v3.droplevel(level='unused')
+    # df_clean_v1 = data_cleaner(df_reset_v1)
+    # df_clean_v2 = data_cleaner(df_reset_v2)
+    # df_clean_v3 = data_cleaner(df_reset_v3)
     # ### Load numpy array of v1 and v2 and calculate delta
-    # delta_v2_v1 = mask_clbp_commit2_v2 - mask_clbp_commit2_v1
+    # delta_v3_v2 = df_clean_v2 - df_clean_v3
     # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
-    # df_clbp_mean_filter = mean_matrix(mask_clbp_commit2_v1)
-    # df_clbp_mean_centrality = mean_matrix(delta_v2_v1)
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/delta_v2_v1.txt', df_clbp_mean_centrality, fmt='%1.5f')
-    
+    # df_clbp_mean_filter = mean_matrix(df_clean_v1)
+    # df_clbp_mean_v2 = mean_matrix(df_clean_v2)
+    # df_clbp_mean_v3 = mean_matrix(df_clean_v3)
+    # df_clbp_mean_delta = mean_matrix(delta_v3_v2)
+    # df_v1 = prepare_data(df_clbp_mean_filter)
+    # df_v2 = prepare_data(df_clbp_mean_v2)
+    # df_v3 = prepare_data(df_clbp_mean_v3)
     # ### Load figure
-    # plot_network(delta_v2_v1, load_brainnetome_centroids())
+    # figure_data = prepare_data(df_clbp_mean_delta, absolute=False)
+    # plot_network(figure_data, load_brainnetome_centroids())
 
 if __name__ == "__main__":
     main()
