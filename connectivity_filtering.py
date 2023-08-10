@@ -90,7 +90,7 @@ def load_brainnetome_centroids(image="/home/mafor/dev_tpil/tpil_networks/tpil_ne
 def distance_dependant_filter(df_connectivity_matrix):
     """
     Calculates distance-dependent group consensus structural connectivity graph
-    This filter is considered distance-dependant as it will divide data into bins (based on edge length percentile).
+    This filter is considered distance-dependent as it will divide data into bins (based on edge length percentile).
     It then takes the edge with the best consensus (edge represented with the most stability accross subjects)
 
     Betzel, R. F., Griffa, A., Hagmann, P., & Mišić, B. (2018). Distance- dependent consensus thresholds for generating 
