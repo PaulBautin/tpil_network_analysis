@@ -32,6 +32,7 @@ import matplotlib.colors as colors
 import glob
 import bct
 import networkx as nx
+import pingouin as pg
 from scipy.stats import ttest_rel
 from scipy.stats import t
 from statsmodels.stats.anova import AnovaRM
@@ -48,6 +49,7 @@ from connectivity_stats import z_score
 from connectivity_stats import nbs_data
 from connectivity_stats import paired_t_test
 from connectivity_stats import friedman
+from connectivity_stats import icc
 from graph_theory_functions import networkx_degree_centrality
 from graph_theory_functions import networkx_betweenness_centrality
 from graph_theory_functions import networkx_eigenvector_centrality
@@ -139,7 +141,6 @@ def main():
     ### Get connectivity data
     df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
-
     ### work only on one session at a time
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
@@ -156,23 +157,25 @@ def main():
     # df_clbp_sc_v1 = df_clbp_sc[df_clbp['session'] == "v1"].drop("session", axis=1)
 
     """
-    To create a Networkx graph of delta degree centrality of Commit2_weights.csv of clbp at v1 and v2 after scilpy filtering
+    To create a Networkx graph of delta degree centrality of clbp Commit2_weights.csv of clbp at v1, v2 and v3 after scilpy filtering
     """
-    # ### Scilpy filter on commit2_weights data
-    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
-    # mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x))
-    # mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x))
-    # ### Degree centrality
-    # df_clbp_centrality_v1 = mask_clbp_commit2_v1.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
-    # df_clbp_centrality_v1.index.names = ['subject', 'roi']
-    # df_clean_centrality_v1 = data_cleaner(df_clbp_centrality_v1)
-    # df_clbp_centrality_v2 = mask_clbp_commit2_v2.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
-    # df_clbp_centrality_v2.index.names = ['subject', 'roi']
-    # df_clean_centrality_v2 = data_cleaner(df_clbp_centrality_v2)
-    # df_clbp_centrality_v3 = mask_clbp_commit2_v3.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
-    # df_clbp_centrality_v3.index.names = ['subject', 'roi']
-    # df_clean_centrality_v3 = data_cleaner(df_clbp_centrality_v3)
-    
+    ### Scilpy filter on commit2_weights data
+    mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x))
+    mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x))
+    mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x))
+    ### Degree centrality
+    df_clbp_centrality_v1 = mask_clbp_commit2_v1.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
+    df_clbp_centrality_v1.index.names = ['subject', 'roi']
+    df_clean_centrality_v1 = data_cleaner(df_clbp_centrality_v1)
+    df_clbp_centrality_v2 = mask_clbp_commit2_v2.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
+    df_clbp_centrality_v2.index.names = ['subject', 'roi']
+    df_clean_centrality_v2 = data_cleaner(df_clbp_centrality_v2)
+    df_clbp_centrality_v3 = mask_clbp_commit2_v3.groupby('subject').apply(lambda x:networkx_degree_centrality(x)).rename(columns={0: 'centrality'})
+    df_clbp_centrality_v3.index.names = ['subject', 'roi']
+    df_clean_centrality_v3 = data_cleaner(df_clbp_centrality_v3)
+
+    ### Calculate ICC
+    results = icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3)
     # ### Calculate Friedman test
     # stat, pval = friedman(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3)
     

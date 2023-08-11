@@ -23,10 +23,12 @@ import numpy as np
 import os
 import argparse
 import bct
+import pingouin as pg
 import matplotlib
 from connectivity_read_files import find_files_with_common_name
 from scipy.stats import ttest_rel
 from scipy.stats import t
+from scipy.stats import zscore
 from scipy import stats
 
 def get_parser():
@@ -191,14 +193,31 @@ def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
 
     return df_results_stats, df_results_pval
     
-    # unique_rois = df_centrality_v1.index.get_level_values('roi').unique()
-    # results = []
-    # for roi in unique_rois:
-    #     result = stats.friedmanchisquare(df_centrality_v1, df_centrality_v2, df_centrality_v3)
-    #     print(result)
-    #     results.append(result)
-    # results_df = pd.DataFrame(results)
-    # return results_df
+def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
+    """
+    Calculates intraclass correlation coefficient
+    of centrality metrics at different time points
+
+    Parameters
+    ----------
+    df_clean_centrality_v1 : (1, N) pandas DataFrame where N is the number of nodes 
+    df_clean_centrality_v2 : (1, N) pandas DataFrame where N is the number of nodes
+    df_clean_centrality_v3 : (1, N) pandas DataFrame where N is the number of nodes
+
+    Returns
+    -------
+    icc : list of all types of ICC with their description, value, F-value, degrees of freedom, p-value and CI95%
+    """
+    df_clean_centrality_v1.insert(1, "session", 1, True)
+    df_clean_centrality_v2.insert(1, "session", 2, True)
+    df_clean_centrality_v3.insert(1, "session", 3, True)
+    df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
+    df_concat_reset = df_concat.reset_index()
+    icc = pg.intraclass_corr(data=df_concat_reset, targets='roi', raters='session', ratings='centrality')
+    icc.set_index('Type')
+    print(icc)
+    return icc
+    
 
 def main():
     """
@@ -217,7 +236,7 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
 
-
+    icc(df_clbp)
 
     
 
