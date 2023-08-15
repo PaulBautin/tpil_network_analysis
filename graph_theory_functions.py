@@ -141,9 +141,9 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes):
                 # add the weighted edge between nodes with the weight from the NumPy array
                 G.add_edge(i, j, weight=weight)
     # graph according to node position and color intensity
-    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=df_weighted_nodes['statistic'], cmap=colormap, vmin=0, vmax=6) #for z-score, add vmin=-2,vmax=2
+    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=df_weighted_nodes['t_statistic'], cmap=colormap, vmin=-2, vmax=2) #for z-score, add vmin=-2,vmax=2
     #set colorbar
-    plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=0, vmax=6), cmap=colormap)) #for z-score, add norm=mpl.colors.Normalize(vmin=-2, vmax=2),
+    plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=-2, vmax=2), cmap=colormap)) #for z-score, add norm=mpl.colors.Normalize(vmin=-2, vmax=2),
     #cbar.set_label('Color Intensity')
     plt.axis('equal')
     plt.show()

@@ -236,9 +236,5 @@ def main():
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
 
-    icc(df_clbp)
-
-    
-
 if __name__ == "__main__":
     main()
