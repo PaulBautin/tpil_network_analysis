@@ -157,25 +157,26 @@ def main():
     # df_clbp_sc_v1 = df_clbp_sc[df_clbp['session'] == "v1"].drop("session", axis=1)
 
     """
-    To create a Networkx graph of delta degree centrality of clbp Commit2_weights.csv of clbp at v1, v2 and v3 after scilpy filtering
+    To create a Networkx graph of delta betweenness centrality of clbp Commit2_weights.csv of clbp at v1, v2 and v3 after scilpy filtering
+    Calculates ICC, Friedman, paired t-test for every ROI, calculates delta
     """
-    ### Scilpy filter on commit2_weights data
-    mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
-    mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'v2'))
-    mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'v3'))
-    ### Degree centrality
-    df_clbp_centrality_v1 = mask_clbp_commit2_v1.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
-    df_clbp_centrality_v1.index.names = ['subject', 'roi']
-    df_clean_centrality_v1 = data_cleaner(df_clbp_centrality_v1)
-    df_clbp_centrality_v2 = mask_clbp_commit2_v2.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
-    df_clbp_centrality_v2.index.names = ['subject', 'roi']
-    df_clean_centrality_v2 = data_cleaner(df_clbp_centrality_v2)
-    df_clbp_centrality_v3 = mask_clbp_commit2_v3.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
-    df_clbp_centrality_v3.index.names = ['subject', 'roi']
-    df_clean_centrality_v3 = data_cleaner(df_clbp_centrality_v3)
+    # ### Scilpy filter on commit2_weights data
+    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
+    # mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'v2'))
+    # mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'v3'))
+    # ### Degree centrality
+    # df_clbp_centrality_v1 = mask_clbp_commit2_v1.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
+    # df_clbp_centrality_v1.index.names = ['subject', 'roi']
+    # df_clean_centrality_v1 = data_cleaner(df_clbp_centrality_v1)
+    # df_clbp_centrality_v2 = mask_clbp_commit2_v2.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
+    # df_clbp_centrality_v2.index.names = ['subject', 'roi']
+    # df_clean_centrality_v2 = data_cleaner(df_clbp_centrality_v2)
+    # df_clbp_centrality_v3 = mask_clbp_commit2_v3.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
+    # df_clbp_centrality_v3.index.names = ['subject', 'roi']
+    # df_clean_centrality_v3 = data_cleaner(df_clbp_centrality_v3)
     
-    ### Calculate ICC
-    results = icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3)
+    # ### Calculate ICC
+    # results = icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3)
     
     # ### Calculate Friedman test
     # stat, pval = friedman(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3)
@@ -184,7 +185,7 @@ def main():
     # t_result_v2_v1 = paired_t_test(df_clean_centrality_v1, df_clean_centrality_v2)
     # t_result_v3_v2 = paired_t_test(df_clean_centrality_v2, df_clean_centrality_v3)
 
-    # ### Load numpy array of v1 and v2 and calculate delta
+    # ### Load numpy array of v1, v2 and v3 and calculate delta
     # delta_v2_v1 = df_clean_centrality_v2 - df_clean_centrality_v1
     # delta_v3_v2 = df_clean_centrality_v3 - df_clean_centrality_v2
     # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
