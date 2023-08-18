@@ -213,6 +213,9 @@ def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
     df_clean_centrality_v3.insert(1, "session", 3, True)
     df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
     df_concat_reset = df_concat.reset_index()
+    df_concat_reset['centrality'] = df_concat_reset['centrality']
+    print(df_concat_reset.groupby(['roi','session']).std())
+    print(df_concat_reset.groupby(['subject', 'roi']).std())
     icc = pg.intraclass_corr(data=df_concat_reset, targets='roi', raters='session', ratings='centrality')
     icc.set_index('Type')
     print(icc)

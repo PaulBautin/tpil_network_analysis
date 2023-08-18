@@ -157,7 +157,7 @@ def threshold_filter(df_connectivity_matrix):
     #df_mean_matrix[df_mean_matrix < 1] = 0
     #return df_mean_matrix
 
-def scilpy_filter(df_connectivity_matrix):
+def scilpy_filter(df_connectivity_matrix, session):
     """
     Each node with a value of 1 represents a node with at least 90% of the population having at least 1 streamline
     and at least 90% of the population having at least 20mm of average streamlines length. 
@@ -171,13 +171,34 @@ def scilpy_filter(df_connectivity_matrix):
     -------
     mask_data : (N, N) filtered conenctivity matrix, pandas DataFrame
     """
-    mask_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_mask_sc.npy')
-    mask_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_mask_sc.npy')
-    mask_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_mask_len.npy')
-    mask_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_mask_len.npy')
-    df_mult = df_connectivity_matrix.set_index(["subject","roi"]) # step necessary to apply z-score equation on every subject
-    mask = mask_con_len * mask_clbp_len * mask_con_sc * mask_clbp_sc
-    mask_data = df_mult * mask
+    valid_sessions = ['v1', 'v2', 'v3']
+    if session not in valid_sessions:
+        print("Invalid session. Valid sessions:", valid_sessions)
+        return None
+    elif session == 'v1':
+        mask_v1_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v1_mask_sc.npy')
+        mask_v1_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_sc.npy')
+        mask_v1_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v1_mask_len.npy')
+        mask_v1_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_len.npy')
+        df_mult = df_connectivity_matrix.set_index(["subject","roi"]) # step necessary to apply z-score equation on every subject
+        mask_v1 = mask_v1_con_len * mask_v1_clbp_len * mask_v1_con_sc * mask_v1_clbp_sc
+        mask_data = df_mult * mask_v1
+    elif session == 'v2':
+        mask_v2_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v2_mask_sc.npy')
+        mask_v2_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_sc.npy')
+        mask_v2_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v2_mask_len.npy')
+        mask_v2_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_len.npy')
+        df_mult = df_connectivity_matrix.set_index(["subject","roi"]) # step necessary to apply z-score equation on every subject
+        mask_v2 = mask_v2_con_len * mask_v2_clbp_len * mask_v2_con_sc * mask_v2_clbp_sc
+        mask_data = df_mult * mask_v2
+    elif session == 'v3':
+        mask_v3_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v3_mask_sc.npy')
+        mask_v3_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_sc.npy')
+        mask_v3_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v3_mask_len.npy')
+        mask_v3_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_len.npy')
+        df_mult = df_connectivity_matrix.set_index(["subject","roi"]) # step necessary to apply z-score equation on every subject
+        mask_v3 = mask_v3_con_len * mask_v3_clbp_len * mask_v3_con_sc * mask_v3_clbp_sc
+        mask_data = df_mult * mask_v3
     return mask_data
 
 
