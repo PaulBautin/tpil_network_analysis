@@ -202,7 +202,6 @@ def scilpy_filter(df_connectivity_matrix, session):
         mask_data = df_mult * mask_all
     return mask_data
 
-
 def main():
     """
     main function, gather stats and call plots

@@ -141,9 +141,12 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes):
                 # add the weighted edge between nodes with the weight from the NumPy array
                 G.add_edge(i, j, weight=weight)
     # graph according to node position and color intensity
-    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=df_weighted_nodes['t_statistic'], cmap=colormap, vmin=-2, vmax=2) #for z-score, add vmin=-2,vmax=2
+    node_color = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_stat.csv')
+    node_color = (node_color.sort_index())
+    print(node_color)
+    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=node_color['statistic'], cmap=colormap, vmin=0, vmax=6, with_labels=False) #for z-score, add vmin=-2,vmax=2
     #set colorbar
-    plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=-2, vmax=2), cmap=colormap)) #for z-score, add norm=mpl.colors.Normalize(vmin=-2, vmax=2),
+    plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=0, vmax=6), cmap=colormap)) #for z-score, add norm=mpl.colors.Normalize(vmin=-2, vmax=2),
     #cbar.set_label('Color Intensity')
     plt.axis('equal')
     plt.show()
