@@ -102,6 +102,7 @@ def plot_network(adj, coords):
     """
     fig = plt.figure(figsize=(11,5))
     ax = fig.add_subplot(121, projection='3d')
+    ax.set_facecolor('black')
     # remove nans from adj
     adj[np.isnan(adj)] = 0
     # Identify edges in the network
@@ -123,6 +124,7 @@ def plot_network(adj, coords):
     ax.axis('off')
 
     ax2 = fig.add_subplot(122, projection='3d')
+    ax2.set_facecolor('black')
     # Identify edges in the network
     # edges = np.where(adj != 0)
     # edge_cmap = plt.get_cmap('RdYlBu')

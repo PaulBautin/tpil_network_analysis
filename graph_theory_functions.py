@@ -150,6 +150,7 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes):
     #cbar.set_label('Color Intensity')
     plt.axis('equal')
     plt.show()
+    
 
 def networkx_degree_centrality(df_connectivity_matrix):
     """

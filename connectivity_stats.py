@@ -190,6 +190,8 @@ def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
     # Create a DataFrame to store the results
     df_results_stats = pd.DataFrame(results_statistics)
     df_results_pval = pd.DataFrame(results_pval)
+    df_results_stats.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_stat.csv')
+    df_results_pval.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_pval.csv')
 
     return df_results_stats, df_results_pval
     
