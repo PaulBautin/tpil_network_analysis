@@ -216,13 +216,57 @@ def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
     df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
     df_concat_reset = df_concat.reset_index()
     df_concat_reset['centrality'] = df_concat_reset['centrality']
-    print(df_concat_reset.groupby(['roi','session']).std())
-    print(df_concat_reset.groupby(['subject', 'roi']).std())
+    print(df_concat)
+    print(df_concat_reset)
+    # print(df_concat_reset.groupby(['roi','session']).std())
+    # print(df_concat_reset.groupby(['subject', 'roi']).std())
     icc = pg.intraclass_corr(data=df_concat_reset, targets='roi', raters='session', ratings='centrality')
     icc.set_index('Type')
     print(icc)
     return icc
     
+def my_icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
+    """
+    Calculates intraclass correlation coefficient
+    of centrality metrics at different time points
+
+    Parameters
+    ----------
+    df_clean_centrality_v1 : (1, N) pandas DataFrame where N is the number of nodes 
+    df_clean_centrality_v2 : (1, N) pandas DataFrame where N is the number of nodes
+    df_clean_centrality_v3 : (1, N) pandas DataFrame where N is the number of nodes
+
+    Returns
+    -------
+    icc : list of all types of ICC with their description, value, F-value, degrees of freedom, p-value and CI95%
+    """
+    # Specify session in DataFrame
+    df_clean_centrality_v1.insert(1, "session", 1, True)
+    df_clean_centrality_v2.insert(1, "session", 2, True)
+    df_clean_centrality_v3.insert(1, "session", 3, True)
+    # Merge DataFrames togetther and reorder index
+    df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
+    df_concat_reset = df_concat.reset_index()
+    df_concat_reset['centrality'] = df_concat_reset['centrality']
+    # Within-subject Variance: variance of time points for each subject in each region
+    within_sub_var = df_concat_reset.groupby(['subject', 'roi']).var()
+    print(within_sub_var)
+    within_sub_var_region = mean_matrix(within_sub_var)
+    print("within-subject variance per region:", within_sub_var_region)
+    within_sub_var_mean = within_sub_var_region['centrality'].mean()
+    print("within-subject/region variance:", within_sub_var_mean)
+    # Between-subject Variance: variance of subjects
+    mean_session_centrality = df_concat_reset.groupby(['subject', 'roi'])['centrality'].mean().reset_index()
+    between_sub_var_region = mean_session_centrality.groupby('roi').var()
+    print("between-subject variance per region:", between_sub_var_region)
+    between_sub_var_mean = mean_session_centrality.var()
+    print("between-subject/region variance:", between_sub_var_mean)
+    # Calculate the ICC
+    icc = (between_sub_var_mean - within_sub_var_mean) / (between_sub_var_mean + (3-1) * within_sub_var_mean)
+    print("intraclass correlation coefficient:", icc)
+    icc_region = (between_sub_var_region - within_sub_var_region) / (between_sub_var_region + (3-1) * within_sub_var_region)
+    print("intraclass correlation coefficient per region:", icc_region)
+    print("mean icc_region:", icc_region['centrality'].mean())
 
 def main():
     """
@@ -240,6 +284,11 @@ def main():
 
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
+    df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
+    df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
+    df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
+    df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
+
 
 if __name__ == "__main__":
     main()
