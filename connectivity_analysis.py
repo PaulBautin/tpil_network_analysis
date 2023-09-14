@@ -188,8 +188,8 @@ def main():
     # df_con_centrality_v3.index.names = ['subject', 'roi']
     # df_clean_con_v3 = data_cleaner(df_con_centrality_v3)
     ### Calculate ICC
-    # results_my_icc = my_icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
-    results_icc = icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
+    results_my_icc = my_icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
+    # results_icc = icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
     
     # ### Calculate Friedman test
     # stat, pval = friedman(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3)
