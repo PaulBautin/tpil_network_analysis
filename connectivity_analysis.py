@@ -43,20 +43,12 @@ from connectivity_filtering import scilpy_filter
 from connectivity_filtering import threshold_filter
 from connectivity_graphing import circle_graph
 from connectivity_graphing import histogram
-from connectivity_stats import friedman
-from connectivity_stats import icc
-from connectivity_stats import mean_matrix
-from connectivity_stats import my_icc
-from connectivity_stats import nbs_data
-from connectivity_stats import paired_t_test
-from connectivity_stats import z_score
-from graph_theory_functions import networkx_betweenness_centrality
-from graph_theory_functions import networkx_cluster_coefficient
-from graph_theory_functions import networkx_degree_centrality
-from graph_theory_functions import networkx_eigenvector_centrality
-from graph_theory_functions import networkx_graph_convertor
-from graph_theory_functions import z_score_centrality
 from connectivity_read_files import find_files_with_common_name
+import bct_graph_theory_fct
+import connectivity_stats
+import graph_theory_functions
+
+
 
 def get_parser():
     """parser function"""
@@ -128,6 +120,12 @@ def data_cleaner(df_connectivity_matrix):
     df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(subjects_to_remove)]
     return(df_cleaned)
 
+def compute_betweenness(df_connectivity_matrix):
+    np_connectivity_matrix = df_connectivity_matrix.values
+    centrality = bct.betweenness_wei(np_connectivity_matrix)
+    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    return df_centrality
+
 def main():
     """
     main function, gather stats and call plots
@@ -161,23 +159,23 @@ def main():
     To create a Networkx graph of delta betweenness centrality of clbp Commit2_weights.csv of clbp at v1, v2 and v3 after scilpy filtering
     Calculates ICC, Friedman, paired t-test for every ROI, calculates delta
     """
-    ### Scilpy filter on commit2_weights data
-    mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    mask_con_commit2_v1 = df_con_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    mask_con_commit2_v2 = df_con_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    mask_con_commit2_v3 = df_con_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    ### Degree centrality
-    df_clbp_centrality_v1 = mask_clbp_commit2_v1.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
-    df_clbp_centrality_v1.index.names = ['subject', 'roi']
-    df_clean_clbp_v1 = data_cleaner(df_clbp_centrality_v1)
-    df_clbp_centrality_v2 = mask_clbp_commit2_v2.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
-    df_clbp_centrality_v2.index.names = ['subject', 'roi']
-    df_clean_clbp_v2 = data_cleaner(df_clbp_centrality_v2)
-    df_clbp_centrality_v3 = mask_clbp_commit2_v3.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
-    df_clbp_centrality_v3.index.names = ['subject', 'roi']
-    df_clean_clbp_v3 = data_cleaner(df_clbp_centrality_v3)
+    # ### Scilpy filter on commit2_weights data
+    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    # mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    # mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    # mask_con_commit2_v1 = df_con_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    # mask_con_commit2_v2 = df_con_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    # mask_con_commit2_v3 = df_con_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    # ### Degree centrality
+    # df_clbp_centrality_v1 = mask_clbp_commit2_v1.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
+    # df_clbp_centrality_v1.index.names = ['subject', 'roi']
+    # df_clean_clbp_v1 = data_cleaner(df_clbp_centrality_v1)
+    # df_clbp_centrality_v2 = mask_clbp_commit2_v2.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
+    # df_clbp_centrality_v2.index.names = ['subject', 'roi']
+    # df_clean_clbp_v2 = data_cleaner(df_clbp_centrality_v2)
+    # df_clbp_centrality_v3 = mask_clbp_commit2_v3.groupby('subject').apply(lambda x:networkx_betweenness_centrality(x)).rename(columns={0: 'centrality'})
+    # df_clbp_centrality_v3.index.names = ['subject', 'roi']
+    # df_clean_clbp_v3 = data_cleaner(df_clbp_centrality_v3)
     # df_con_centrality_v1 = mask_con_commit2_v1.groupby('subject').apply(lambda x:networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
     # df_con_centrality_v1.index.names = ['subject', 'roi']
     # df_clean_con_v1 = data_cleaner(df_con_centrality_v1)
@@ -187,8 +185,8 @@ def main():
     # df_con_centrality_v3 = mask_con_commit2_v3.groupby('subject').apply(lambda x:networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
     # df_con_centrality_v3.index.names = ['subject', 'roi']
     # df_clean_con_v3 = data_cleaner(df_con_centrality_v3)
-    ### Calculate ICC
-    results_my_icc = my_icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
+    # ### Calculate ICC
+    # results_my_icc = my_icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
     # results_icc = icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
     
     # ### Calculate Friedman test
@@ -225,18 +223,25 @@ def main():
     """
     To create a Networkx graph of z-score cluster coefficient of Commit2_weights.csv of clbp and con at v1 after scilpy filtering
     """
-    # ### Scilpy filter on commit2_weights data
-    # mask_clbp_commit2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
-    # mask_con_commit2 = df_con_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
-    # ### Degree centrality
-    # df_con_centrality = mask_con_commit2.groupby('subject').apply(lambda x:networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
-    # df_con_centrality.index.names = ['subject', 'roi']
-    # df_clbp_centrality = mask_clbp_commit2.groupby('subject').apply(lambda x:networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
-    # df_clbp_centrality.index.names = ['subject', 'roi']
-    # ### Z-score of degree centrality for df_weighted_nodes of networkx_graph_convertor
-    # df_z_score_nx = z_score_centrality(df_con_centrality, df_clbp_centrality)
-    # print(df_z_score_nx)
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/df_z_score_nx.txt', df_z_score_nx, fmt='%1.3f')
+    ### Scilpy filter on commit2_weights data
+    mask_clbp_commit2 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'v3'))
+    mask_con_commit2 = df_con_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'v3'))
+    
+    ### Betweenness centrality
+    df_con_centrality = mask_con_commit2.groupby('subject').apply(lambda x:graph_theory_functions.networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
+    df_con_centrality.index.names = ['subject', 'roi']
+    df_clbp_centrality = mask_clbp_commit2.groupby('subject').apply(lambda x:graph_theory_functions.networkx_cluster_coefficient(x)).rename(columns={0: 'centrality'})
+    df_clbp_centrality.index.names = ['subject', 'roi']
+    ### Betweenness centrality bctpy
+    df_con_centrality_bct = mask_con_commit2.groupby('subject').apply(lambda x:bct_graph_theory_fct.compute_cluster(x))
+    df_con_centrality_bct.index.names = ['subject', 'roi']
+    df_clbp_centrality_bct = mask_clbp_commit2.groupby('subject').apply(lambda x:bct_graph_theory_fct.compute_cluster(x))
+    df_clbp_centrality_bct.index.names = ['subject', 'roi']
+    ### Z-score of degree centrality for df_weighted_nodes of networkx_graph_convertor
+    df_z_score_nx = graph_theory_functions.z_score_centrality(df_con_centrality, df_clbp_centrality)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/df_z_score_nx.txt', df_z_score_nx, fmt='%1.5f')
+    df_z_score_bct = graph_theory_functions.z_score_centrality(df_con_centrality_bct, df_clbp_centrality_bct)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/df_z_score_bct.txt', df_z_score_bct, fmt='%1.5f')
     # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
     # df_clbp_mean_filter = mean_matrix(mask_clbp_commit2)
     
