@@ -99,9 +99,10 @@ def prepare_data(df_connectivity_matrix, absolute=True):
         np_connectivity_matrix = np.triu(np_connectivity_matrix)
     return np_connectivity_matrix
 
-def data_cleaner(df_connectivity_matrix):
+def data_cleaner(df_connectivity_matrix, condition=int):
     """
-    Returns Data with only the desired patients
+    Returns Data with only the desired patients for centrality measures, as some have missing values. Used to obtain 
+    results of different graph theory metrics for comparison accross visits.
 
     Parameters
     ----------
@@ -109,11 +110,16 @@ def data_cleaner(df_connectivity_matrix):
 
     Returns
     -------
-    df_connectivity_matrix : (NxS-X, N) pandas DataFrame
+    df_connectivity_matrix : (NxS-X, 1) pandas DataFrame
     """
     df_connectivity_matrix.index.names = ['subject', 'roi']
-    subjects_to_remove = ['sub-pl004'] # Need to hard-code this! sub-pl004 for con; sub-pl008, sub-pl016, sub-pl037, sub-pl039 for clbp
-    df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(subjects_to_remove)]
+    subjects_to_remove_clbp = ['sub-pl008', 'sub-pl016', 'sub-pl037', 'sub-pl039'] 
+    subjects_to_remove_con = ['sub-pl004']
+    if condition == 'con':
+        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(subjects_to_remove_con)]
+    if condition == 'clbp':
+        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(subjects_to_remove_clbp)]
+
     return(df_cleaned)
 
 def main():
@@ -137,6 +143,7 @@ def main():
     df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
     df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
     df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
+
     # ### Get similarity data
     # df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
     # df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
