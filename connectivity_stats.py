@@ -166,32 +166,34 @@ def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
 
     Parameters
     ----------
-    df_centrality_v1 : (1, N) pandas DataFrame where N is the number of nodes 
-    df_centrality_v2 : (1, N) pandas DataFrame where N is the number of nodes
-    df_centrality_v3 : (1, N) pandas DataFrame where N is the number of nodes
+    df_centrality_v1 : pandas DataFrame
+        DataFrame containing centrality data for version 1.
+    df_centrality_v2 : pandas DataFrame
+        DataFrame containing centrality data for version 2.
+    df_centrality_v3 : pandas DataFrame
+        DataFrame containing centrality data for version 3.
 
     Returns
     -------
-    df_results : (2, N) pandas DataFrame of chi square statistic and p-value where N is the number of nodes
+    df_results : pandas DataFrame
+        DataFrame of chi-square statistic and p-value for each ROI.
     """
-    unique_rois = df_centrality_v1.index.get_level_values('roi').unique()
+    unique_rois = df_centrality_v1['roi'].unique()
     results_statistics = []
     results_pval = []
 
     for roi in unique_rois:
-        roi_data_v1 = df_centrality_v1.loc[(slice(None), roi), 'centrality'].values
-        roi_data_v2 = df_centrality_v2.loc[(slice(None), roi), 'centrality'].values
-        roi_data_v3 = df_centrality_v3.loc[(slice(None), roi), 'centrality'].values
-    
+        roi_data_v1 = df_centrality_v1[df_centrality_v1['roi'] == roi]['centrality'].values
+        roi_data_v2 = df_centrality_v2[df_centrality_v2['roi'] == roi]['centrality'].values
+        roi_data_v3 = df_centrality_v3[df_centrality_v3['roi'] == roi]['centrality'].values
+
         result = stats.friedmanchisquare(roi_data_v1, roi_data_v2, roi_data_v3)
         results_statistics.append({'roi': roi, 'statistic': result.statistic})
         results_pval.append({'roi': roi, 'p_value': result.pvalue})
 
-    # Create a DataFrame to store the results
+    # Create DataFrames to store the results
     df_results_stats = pd.DataFrame(results_statistics)
     df_results_pval = pd.DataFrame(results_pval)
-    df_results_stats.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_stat.csv')
-    df_results_pval.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_pval.csv')
 
     return df_results_stats, df_results_pval
     

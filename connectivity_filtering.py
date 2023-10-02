@@ -202,32 +202,56 @@ def scilpy_filter(df_connectivity_matrix, session):
         mask_data = df_mult * mask_all
     return mask_data
 
-def sex_filter(df_connectivity_matrix, sex=int, condition=int):
+
+def sex_filter(df_connectivity_matrix, sex='F ', condition='clbp'):
     """
-    Returns Data with only the desired patients for centrality measures. Used to measure effet of sex on
-    results of different graph theory metrics for comparison accross visits.
+    Returns Data with only the desired patients for centrality measures. Used to measure the effect of sex on
+    results of different graph theory metrics for comparison across visits.
 
     Parameters
     ----------
-    df_connectivity_matrix : (NxS rows, 1 column) pandas DataFrame
+    df_connectivity_matrix : pandas DataFrame
+        The DataFrame containing the connectivity matrix.
+    sex : str, optional (default is 'M')
+        Sex to filter by: 'M' for male, 'F' for female.
+    condition : str, optional (default is 'clbp')
+        Condition to filter by: 'con' for control, 'clbp' for chronic low back pain.
+    index_format : str, optional (default is 'subject_roi')
+        The format of the DataFrame's index. It can be 'subject_roi' or 'subject'. 
 
     Returns
     -------
-    df_connectivity_matrix : (NxS-X, 1) pandas DataFrame
+    df_connectivity_matrix : pandas DataFrame
+        The filtered DataFrame.
     """
-    df_connectivity_matrix.index.names = ['subject', 'roi']
+    # Check if sex is valid
+    if sex not in ('M', 'F'):
+        raise ValueError("Sex must be 'M' or 'F'")
+
+    # Check if condition is valid
+    if condition not in ('con', 'clbp'):
+        raise ValueError("Condition must be 'con' or 'clbp'")
+
     female_clbp_subjects = ['sub-pl007', 'sub-pl016', 'sub-pl017', 'sub-pl019', 'sub-pl027', 'sub-pl031', 'sub-pl035', 'sub-pl038', 'sub-pl039', 'sub-pl042', 'sub-pl049', 'sub-pl056', 'sub-pl064']
     female_con_subjects = ['sub-pl002', 'sub-pl004', 'sub-pl021', 'sub-pl024', 'sub-pl029', 'sub-pl040', 'sub-pl046', 'sub-pl051', 'sub-pl053', 'sub-pl057', 'sub-pl058', 'sub-pl059', 'sub-pl060', 'sub-pl061', 'sub-pl065']
     male_clbp_subjects = ['sub-pl008', 'sub-pl010', 'sub-pl012', 'sub-pl013', 'sub-pl014', 'sub-pl030', 'sub-pl032', 'sub-pl034', 'sub-pl036', 'sub-pl037', 'sub-pl047', 'sub-pl050', 'sub-pl055', 'sub-pl063']
     male_con_subjects = ['sub-pl006', 'sub-pl015', 'sub-pl022', 'sub-pl023', 'sub-pl025', 'sub-pl041', 'sub-pl048', 'sub-pl052', 'sub-pl054', 'sub-pl062']
-    if sex == 'M' and condition =='clbp':
-        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(male_clbp_subjects)]
-    if sex == 'M' and condition =='con':
-        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(male_con_subjects)]
-    if sex == 'F' and condition =='clbp':
-        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(female_clbp_subjects)]
-    if sex == 'F' and condition =='con':
-        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(female_con_subjects)]
+
+    # Set 'subject' as the index if it's not already
+    if 'subject' not in df_connectivity_matrix.index.names:
+        df_connectivity_matrix = df_connectivity_matrix.set_index('subject')
+    
+    if sex == 'M' and condition == 'clbp':
+        df_cleaned = df_connectivity_matrix[df_connectivity_matrix.index.get_level_values('subject').isin(male_clbp_subjects)]
+    elif sex == 'M' and condition == 'con':
+        df_cleaned = df_connectivity_matrix[df_connectivity_matrix.index.get_level_values('subject').isin(male_con_subjects)]
+    elif sex == 'F' and condition == 'clbp':
+        df_cleaned = df_connectivity_matrix[df_connectivity_matrix.index.get_level_values('subject').isin(female_clbp_subjects)]
+    elif sex == 'F' and condition == 'con':
+        df_cleaned = df_connectivity_matrix[df_connectivity_matrix.index.get_level_values('subject').isin(female_con_subjects)]
+    else:
+        raise ValueError("Invalid combination of sex and condition")
+
     return df_cleaned
 
 def main():

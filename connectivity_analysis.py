@@ -37,7 +37,7 @@ from scipy.stats import ttest_rel
 from scipy.stats import t
 from statsmodels.stats.anova import AnovaRM
 from connectivity_figures import plot_network
-from connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter
+from connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter
 from connectivity_graphing import circle_graph, histogram
 from connectivity_read_files import find_files_with_common_name
 from bct_graph_theory_fct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector
@@ -151,6 +151,62 @@ def main():
     # ### work only on one session at a time
     # df_con_sc_v1 = df_con_sc[df_con['session'] == "v1"].drop("session", axis=1)
     # df_clbp_sc_v1 = df_clbp_sc[df_clbp['session'] == "v1"].drop("session", axis=1)
+
+    """
+    To calculate z-score of graph theory metrics analysis with bct based on sex
+    """
+    ### Fetch data
+    centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
+    centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
+    centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
+    centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
+    centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+    centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+    
+    ### Apply sex filter
+    f_clbp_v1 = sex_filter(centrality_clbp_v1, sex='M', condition='clbp')
+    f_con_v1 = sex_filter(centrality_con_v1, sex='M', condition='con')
+    f_clbp_v2 = sex_filter(centrality_clbp_v2, sex='M', condition='clbp')
+    f_con_v2 = sex_filter(centrality_con_v2, sex='M', condition='con')
+    f_clbp_v3 = sex_filter(centrality_clbp_v3, sex='M', condition='clbp')
+    f_con_v3 = sex_filter(centrality_con_v3, sex='M', condition='con')
+    
+    ### Calculate z-score
+    z_score_v1 = z_score(f_con_v1, f_clbp_v1)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/z_score_v1.txt', z_score_v1, fmt='%1.5f')
+    z_score_v2 = z_score(f_con_v2, f_clbp_v2)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/z_score_v2.txt', z_score_v2, fmt='%1.5f')
+    z_score_v3 = z_score(f_con_v3, f_clbp_v3)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/z_score_v3.txt', z_score_v3, fmt='%1.5f')
+
+    """
+    Calculate Friedman test of graph theory metrics analysis with bct based on sex
+    """
+    ### Fetch data
+    centrality_clbp_v1f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v1_scilpy(all).csv')
+    centrality_con_v1f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v1_scilpy(all).csv')
+    centrality_clbp_v2f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v2_scilpy(all).csv')
+    centrality_con_v2f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v2_scilpy(all).csv')
+    centrality_clbp_v3f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v3_scilpy(all).csv')
+    centrality_con_v3f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v3_scilpy(all).csv')
+    ### Apply sex filter
+    f_clbp_v1 = sex_filter(centrality_clbp_v1f, sex='M', condition='clbp')
+    f_con_v1 = sex_filter(centrality_con_v1f, sex='M', condition='con')
+    f_clbp_v2 = sex_filter(centrality_clbp_v2f, sex='M', condition='clbp')
+    f_con_v2 = sex_filter(centrality_con_v2f, sex='M', condition='con')
+    f_clbp_v3 = sex_filter(centrality_clbp_v3f, sex='M', condition='clbp')
+    f_con_v3 = sex_filter(centrality_con_v3f, sex='M', condition='con')
+    ### Calculate Friedman test
+    stat_con, pval_con = friedman(f_con_v1, f_con_v2, f_con_v3)
+    df_con_stat = mean_matrix(stat_con)
+    df_con_pval = mean_matrix(pval_con)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_stat_con.txt', df_con_stat, fmt='%1.5f')
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_pval_con.txt', df_con_pval, fmt='%1.5f')
+    stat_clbp, pval_clbp = friedman(f_clbp_v1, f_clbp_v2, f_clbp_v3)
+    df_clbp_stat = mean_matrix(stat_clbp)
+    df_clbp_pval = mean_matrix(pval_clbp)
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_stat.txt', df_clbp_stat, fmt='%1.5f')
+    np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_pval.txt', df_clbp_pval, fmt='%1.5f')
 
     """
     To create a Networkx graph of delta betweenness centrality of clbp Commit2_weights.csv of clbp at v1, v2 and v3 after scilpy filtering
