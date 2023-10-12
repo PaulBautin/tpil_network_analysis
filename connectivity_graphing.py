@@ -93,7 +93,7 @@ def circle_graph(np_connectivity_matrix):
     # labels of nodes with Brainnetome atlas
     numbers = [f"{i+1:03d}" for i in range(N)]
     names = []
-    with open('/home/mafor/dev_tpil/tpil_network_analysis/labels/Brainnetome atlas.txt', 'r') as fp: 
+    with open('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all_atlas.txt', 'r') as fp: 
         for line in fp:
             x = line[:-1]
             names.append(x)
@@ -105,7 +105,7 @@ def circle_graph(np_connectivity_matrix):
     line_plot = plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker="o", markersize=10, color="steelblue", alpha=0.7)
     for i in range(N):
         for j in range(i + 1, N):
-            if A[i, j] != 0:  # Considers all non-zero edge intensities
+            if A[i, j] > 2:  # Considers all non-zero edge intensities
                 edge_color = A[i, j]  # Use the edge intensity as the color value
                 plt.plot([xy[i, 0], xy[j, 0]], [xy[i, 1], xy[j, 1]], color=cm.viridis(edge_color), linewidth=1)
                 label_x_i = xy[i, 0] * 1.22  # Adjust label positioning for node i

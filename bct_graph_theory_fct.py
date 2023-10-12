@@ -60,28 +60,68 @@ def get_parser():
     return parser
 
 def compute_degree(df_connectivity_matrix):
-    np_connectivity_matrix = df_connectivity_matrix.values
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.degrees_und(np_connectivity_matrix)
     df_centrality = pd.DataFrame(centrality, columns=['centrality'])
     return df_centrality
 
 def compute_betweenness(df_connectivity_matrix):
-    np_connectivity_matrix = df_connectivity_matrix.values
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.betweenness_wei(np_connectivity_matrix)
     df_centrality = pd.DataFrame(centrality, columns=['centrality'])
     return df_centrality
 
 def compute_eigenvector(df_connectivity_matrix):
-    np_connectivity_matrix = df_connectivity_matrix.values
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.eigenvector_centrality_und(np_connectivity_matrix)
     df_centrality = pd.DataFrame(centrality, columns=['centrality'])
     return df_centrality
 
 def compute_cluster(df_connectivity_matrix):
-    np_connectivity_matrix = df_connectivity_matrix.values
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.clustering_coef_wu(np_connectivity_matrix)
     df_centrality = pd.DataFrame(centrality, columns=['centrality'])
     return df_centrality
+
+def compute_shortest_path(df_connectivity_matrix):
+    centrality = bct.distance_wei_floyd(df_connectivity_matrix)
+    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    return df_centrality
+
+def compute_global_efficiency(df_connectivity_matrix):
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    global_efficiency = bct.efficiency_wei(np_connectivity_matrix)
+    return global_efficiency
+
+def randomized_weighted_network(df_connectivity_matrix, num_iterations=1000):
+    # convert DataFrame to a NumPy array
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    randomized_matrix = np_connectivity_matrix.copy()
+    # Get the indices of non-zero elements (edges) in the original matrix
+    non_zero_indices = np.transpose(np.nonzero(np_connectivity_matrix))
+    # Perform edge rewiring
+    for _ in range(num_iterations):
+        # Randomly select two different edges to rewire
+        i, j = non_zero_indices[np.random.choice(len(non_zero_indices), 2, replace=False)]
+
+        # Swap the weights of the selected edges
+        randomized_matrix[i, j], randomized_matrix[j, i] = randomized_matrix[j, i], randomized_matrix[i, j]
+
+    return randomized_matrix
+
+def compute_small_world(df_connectivity_matrix):
+    rand_np_connectivity_matrix = df_connectivity_matrix.groupby('subject').apply(lambda x:randomized_weighted_network(x))
+    cluster_coeff = df_connectivity_matrix.groupby('subject').apply(lambda x:compute_cluster(x))
+    print(cluster_coeff)
+    shortest_path = df_connectivity_matrix.groupby('subject').apply(lambda x:compute_shortest_path(x))
+    print(shortest_path)
+    cluster_coeff_rand = rand_np_connectivity_matrix.groupby('subject').apply(lambda x:compute_cluster(x))
+    print(cluster_coeff_rand)
+    shortest_path_rand = rand_np_connectivity_matrix.groupby('subject').apply(lambda x:compute_shortest_path(x))
+    print(shortest_path_rand)
+    sigma = (cluster_coeff / cluster_coeff_rand) / (shortest_path / shortest_path_rand)
+    
+    return sigma
 
 def main():
     """
