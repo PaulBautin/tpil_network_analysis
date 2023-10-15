@@ -1,0 +1,4 @@
+.vscode/*
+.idea/*
+.idea/workspace.xml
+__pycache__/*
