@@ -36,13 +36,13 @@ import pingouin as pg
 from scipy.stats import ttest_rel, ttest_ind
 from scipy.stats import t
 from statsmodels.stats.anova import AnovaRM
-from connectivity_figures import plot_network
-from connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter
-from connectivity_graphing import circle_graph, histogram
-from connectivity_read_files import find_files_with_common_name
-from bct_graph_theory_fct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_global_efficiency, compute_small_world
-from connectivity_stats import mean_matrix, z_score, friedman, nbs_data
-from graph_theory_functions import networkx_graph_convertor
+from functions.connectivity_figures import plot_network, circle_graph, histogram
+from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter
+from functions.connectivity_processing import data_processor
+from functions.connectivity_read_files import find_files_with_common_name
+from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_global_efficiency, compute_small_world, compute_shortest_path
+from functions.connectivity_stats import mean_matrix, z_score, friedman, nbs_data, my_icc, icc
+from functions.gtm_nx import networkx_graph_convertor
 
 
 
@@ -80,49 +80,6 @@ def get_parser():
     )
     return parser
 
-def prepare_data(df_connectivity_matrix, absolute=True):
-    """
-    Returns Data in the appropriate format for figure functions
-
-    Parameters
-    ----------
-    df_connectivity_matrix : (N, N) pandas DataFrame
-
-    Returns
-    -------
-    np_connectivity_matrix : (N, N) array_like
-    """
-    np_connectivity_matrix = df_connectivity_matrix.values
-    np_connectivity_matrix[np.isnan(np_connectivity_matrix)] = 0 
-    if absolute:
-        np_connectivity_matrix = np.triu(abs(np_connectivity_matrix))
-    else:
-        np_connectivity_matrix = np.triu(np_connectivity_matrix)
-    return np_connectivity_matrix
-
-def data_cleaner(df_connectivity_matrix, condition=int):
-    """
-    Returns Data with only the desired patients for centrality measures, as some have missing values. Used to obtain 
-    results of different graph theory metrics for comparison accross visits.
-
-    Parameters
-    ----------
-    df_connectivity_matrix : (NxS rows, 1 column) pandas DataFrame
-
-    Returns
-    -------
-    df_connectivity_matrix : (NxS-X, 1) pandas DataFrame
-    """
-    df_connectivity_matrix.index.names = ['subject', 'roi']
-    subjects_to_remove_clbp = ['sub-pl008', 'sub-pl016', 'sub-pl037', 'sub-pl039'] 
-    subjects_to_remove_con = ['sub-pl004']
-    if condition == 'con':
-        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(subjects_to_remove_con)]
-    if condition == 'clbp':
-        df_cleaned = df_connectivity_matrix[~df_connectivity_matrix.index.get_level_values('subject').isin(subjects_to_remove_clbp)]
-
-    return(df_cleaned)
-
 def main():
     """
     main function, gather stats and call plots
@@ -134,7 +91,10 @@ def main():
     path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
     path_output = os.path.abspath(arguments.o)
     
-    ### Get connectivity data
+    """ 
+    Get connectivity data
+    """
+    
     df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
     ### work only on one session at a time
@@ -149,25 +109,11 @@ def main():
     # df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
     # df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
 
-    # ### work only on one session at a time
-    # df_con_sc_v1 = df_con_sc[df_con['session'] == "v1"].drop("session", axis=1)
-    # df_clbp_sc_v1 = df_clbp_sc[df_clbp['session'] == "v1"].drop("session", axis=1)
-    """
-    To calculate global efficiency and small-worldness of connectivity matrices after scilpy filtering
-    """
-    mask_clbp_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
-    # global_efficiency_clbp_v1 = mask_clbp_v1.groupby('subject').apply(lambda x:compute_global_efficiency(x))
-    # mean_global_efficiency_clbp_v1 = global_efficiency_clbp_v1.mean()
-    # print(mean_global_efficiency_clbp_v1)
-    # mask_con_v1 = df_con_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
-    # global_efficiency_con_v1 = mask_con_v1.groupby('subject').apply(lambda x:compute_global_efficiency(x))
-    # mean_global_efficiency_con_v1 = global_efficiency_con_v1.mean()
-    # print(mean_global_efficiency_con_v1)
-    # t_test = ttest_ind(global_efficiency_clbp_v1, global_efficiency_con_v1)
-    
+    # ### Select data and filters to apply
+    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
     
     """
-    To calculate z-score of graph theory metrics analysis with bct based on sex
+    To calculate z-score and friedman test of graph theory metrics analysis with bct based on sex
     """
     # ### Fetch data
     # centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
@@ -178,12 +124,12 @@ def main():
     # centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
     
     # ### Apply sex filter
-    # f_clbp_v1 = sex_filter(centrality_clbp_v1, sex='M', condition='clbp')
-    # f_con_v1 = sex_filter(centrality_con_v1, sex='M', condition='con')
-    # f_clbp_v2 = sex_filter(centrality_clbp_v2, sex='M', condition='clbp')
-    # f_con_v2 = sex_filter(centrality_con_v2, sex='M', condition='con')
-    # f_clbp_v3 = sex_filter(centrality_clbp_v3, sex='M', condition='clbp')
-    # f_con_v3 = sex_filter(centrality_con_v3, sex='M', condition='con')
+    # f_clbp_v1 = sex_filter(centrality_clbp_v1, sex='F', condition='clbp')
+    # f_con_v1 = sex_filter(centrality_con_v1, sex='F', condition='con')
+    # f_clbp_v2 = sex_filter(centrality_clbp_v2, sex='F', condition='clbp')
+    # f_con_v2 = sex_filter(centrality_con_v2, sex='F', condition='con')
+    # f_clbp_v3 = sex_filter(centrality_clbp_v3, sex='F', condition='clbp')
+    # f_con_v3 = sex_filter(centrality_con_v3, sex='F', condition='con')
     
     # ### Calculate z-score
     # z_score_v1 = z_score(f_con_v1, f_clbp_v1)
@@ -195,25 +141,6 @@ def main():
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/z_score_v2.txt', z_score_v2, fmt='%1.5f')
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/z_score_v3.txt', z_score_v3, fmt='%1.5f')
     
-    """
-    Calculate Friedman test of graph theory metrics analysis with bct based on sex
-    """
-    # ### Fetch data
-    # centrality_clbp_v1f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v1_scilpy(all).csv')
-    # centrality_con_v1f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v1_scilpy(all).csv')
-    # centrality_clbp_v2f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v2_scilpy(all).csv')
-    # centrality_con_v2f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v2_scilpy(all).csv')
-    # centrality_clbp_v3f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v3_scilpy(all).csv')
-    # centrality_con_v3f = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v3_scilpy(all).csv')
-
-    # ### Apply sex filter
-    # f_clbp_v1 = sex_filter(centrality_clbp_v1f, sex='M', condition='clbp')
-    # f_con_v1 = sex_filter(centrality_con_v1f, sex='M', condition='con')
-    # f_clbp_v2 = sex_filter(centrality_clbp_v2f, sex='M', condition='clbp')
-    # f_con_v2 = sex_filter(centrality_con_v2f, sex='M', condition='con')
-    # f_clbp_v3 = sex_filter(centrality_clbp_v3f, sex='M', condition='clbp')
-    # f_con_v3 = sex_filter(centrality_con_v3f, sex='M', condition='con')
-
     # ### Calculate Friedman test
     # stat_con, pval_con = friedman(f_con_v1, f_con_v2, f_con_v3)
     # df_con_stat = mean_matrix(stat_con)
@@ -228,67 +155,19 @@ def main():
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_stat.txt', df_clbp_stat, fmt='%1.5f')
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_pval.txt', df_clbp_pval, fmt='%1.5f')
     
-    """
-    To create a Networkx graph of z_score graph theory metrics at v1, v2 and v3 after scilpy filtering
-    """
-    # ### Fetch data
-    # centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    # centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    # centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    # centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    # centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
-    # centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
-
-    # ### Calculate z-score
-    # z_score_v1 = z_score(centrality_con_v1, centrality_clbp_v1)
-    # z_score_v2 = z_score(centrality_con_v2, centrality_clbp_v2)
-    # z_score_v3 = z_score(centrality_con_v3, centrality_clbp_v3)
-
     # ### Obtain connectivity matrix to graph
     # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
     # df_mean_filter = mean_matrix(mask_clbp_commit2_v1)
-    # networkx_graph_convertor(df_mean_filter, z_score_v1)
-    # networkx_graph_convertor(df_mean_filter, z_score_v2)
-    # networkx_graph_convertor(df_mean_filter, z_score_v3)
+    # networkx_graph_convertor(df_mean_filter, df_con_stat)
+    # networkx_graph_convertor(df_mean_filter, df_clbp_stat)
+
     """
-    To create a Networkx graph of delta betweenness centrality of clbp Commit2_weights.csv of clbp at v1, v2 and v3 after scilpy filtering
-    Calculates ICC, Friedman, paired t-test for every ROI, calculates delta
+    To calculate the ICC
     """
     # ### Calculate ICC
     # results_my_icc = my_icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
     # results_icc = icc(df_clean_clbp_v1, df_clean_clbp_v2, df_clean_clbp_v3)
     
-    ### Calculate Friedman test
-    # stat, pval = friedman(df_clean_con_v1, df_clean_con_v2, df_clean_con_v3)
-    
-    # ### Calculate paired t-tests for each ROI
-    # t_result_v2_v1 = paired_t_test(df_clean_clbp_v1, df_clean_clbp_v2)
-    # t_result_v3_v2 = paired_t_test(df_clean_clbp_v2, df_clean_clbp_v3)
-
-    # ### Calculate difference between visits
-    # delta_v2_v1 = df_clean_clbp_v2 - df_clean_clbp_v1
-    # delta_v3_v2 = df_clean_clbp_v3 - df_clean_clbp_v2
-
-    # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
-    # df_mean_filter = mean_matrix(mask_clbp_commit2_v1)
-    # df_friedman_stat = mean_matrix(stat)
-    # df_friedman_pval = mean_matrix(pval)
-    # df_mean_delta_v2v1 = mean_matrix(delta_v2_v1)
-    # df_mean_delta_v3v2 = mean_matrix(delta_v3_v2)
-    # df_mean_v1 = mean_matrix(df_clean_con_v1)
-    # df_mean_v2 = mean_matrix(df_clean_con_v2)
-    # df_mean_v3 = mean_matrix(df_clean_con_v3)
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_stat.txt', df_friedman_stat, fmt='%1.5f')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/friedman_pval.txt', df_friedman_pval, fmt='%1.5f')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/delta_v2_v1.txt', df_mean_delta_v2v1, fmt='%1.5f')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/delta_v3_v2.txt', df_mean_delta_v3v2, fmt='%1.5f')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/mean_v1.txt', df_mean_v1, fmt='%1.5f')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/mean_v2.txt', df_mean_v2, fmt='%1.5f')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/mean_v3.txt', df_mean_v3, fmt='%1.5f')
-    # ### Networkx graph of degree centrality of commit2_weights.csv nodes filtered by scilpy
-    # networkx_graph_convertor(df_mean_filter, df_friedman_stat)
-    # networkx_graph_convertor(df_mean_filter, t_result_v2_v1)
-    # networkx_graph_convertor(df_mean_filter, t_result_v3_v2)
 
     """
     To do NBS analysis of clbp and con Commit2_weights.csv and store results in NBS_results
@@ -302,21 +181,8 @@ def main():
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/pval_array.txt', pval_array, fmt='%1.3f')
 
     """
-    To create a network graph of z-score connectivity of Commit2_weights.csv of clbp and con at v1 after scilpy and sex filtering
+    To create a network graph of z-score connectivity of Commit2_weights.csv of clbp and con 
     """        
-    # ### Scilpy filter on commit2_weights data
-    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
-    # mask_con_commit2_v1 = df_con_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1'))
-    # mask_con_commit2_v1.index.names = ['subject', 'unused', 'roi']
-    # mask_clbp_commit2_v1.index.names = ['subject', 'unused', 'roi']
-    # df_con_vf = mask_con_commit2_v1.droplevel(level='unused')
-    # df_clbp_vf = mask_clbp_commit2_v1.droplevel(level='unused')
-
-    # ### Apply sex filter
-    # f_clbp_v1 = sex_filter(df_clbp_vf, sex='F', condition='clbp')
-    # f_con_v1 = sex_filter(df_con_vf, sex='F', condition='con')
-    # m_clbp_v1 = sex_filter(df_clbp_vf, sex='M', condition='clbp')
-    # m_con_v1 = sex_filter(df_con_vf, sex='M', condition='con')
     
     # ### Calculate z-score
     # f_z_score = z_score(f_con_v1, f_clbp_v1)
@@ -332,37 +198,6 @@ def main():
     # # plot_network(figure_data_m, load_brainnetome_centroids())
 
     # circle_graph(figure_data_f)
-    """
-    To create a network graph of z-score connectivity of Commit2_weights.csv of clbp at v1 and v2 after scilpy filtering
-    """   
-    # ### Scilpy filter on commit2_weights data
-    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    # mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    # mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    # mask_clbp_commit2_v1.index.names = ['subject', 'unused', 'roi']
-    # mask_clbp_commit2_v2.index.names = ['subject', 'unused', 'roi']
-    # mask_clbp_commit2_v3.index.names = ['subject', 'unused', 'roi']
-    # df_reset_v1 = mask_clbp_commit2_v1.droplevel(level='unused')
-    # df_reset_v2 = mask_clbp_commit2_v2.droplevel(level='unused')
-    # df_reset_v3 = mask_clbp_commit2_v3.droplevel(level='unused')
-    # df_clean_v1 = data_cleaner(df_reset_v1)
-    # df_clean_v2 = data_cleaner(df_reset_v2)
-    # df_clean_v3 = data_cleaner(df_reset_v3)
-    # ### Load numpy array of v1 and v2 and calculate delta
-    # delta_v3_v2 = df_clean_v3 - df_clean_v2
-    # delta_v2_v1 = df_clean_v2 - df_clean_v1
-    # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
-    # df_clbp_mean_filter = mean_matrix(df_clean_v1)
-    # df_clbp_mean_v2 = mean_matrix(df_clean_v2)
-    # df_clbp_mean_v3 = mean_matrix(df_clean_v3)
-    # df_clbp_mean_delta = mean_matrix(delta_v2_v1)
-    # df_v1 = prepare_data(df_clbp_mean_filter)
-    # df_v2 = prepare_data(df_clbp_mean_v2)
-    # df_v3 = prepare_data(df_clbp_mean_v3)
-    # ### Load figure
-    # figure_data = prepare_data(df_clbp_mean_delta, absolute=False)
-    
-    # plot_network(figure_data, load_brainnetome_centroids())
 
 if __name__ == "__main__":
     main()
