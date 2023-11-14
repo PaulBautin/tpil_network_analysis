@@ -115,7 +115,7 @@ def distance_dependant_filter(df_connectivity_matrix):
     return consensus_conn
 
 
-def threshold_filter(df_connectivity_matrix):
+def threshold_matrix(df_connectivity_matrix):
     """
     Uses a minimum spanning tree to ensure that no nodes are disconnected from the resulting thresholded graph.
     Keeps top 10% of connections
@@ -135,7 +135,32 @@ def threshold_filter(df_connectivity_matrix):
     threshold_conn = threshold_network(np.mean(np_con_v1,axis=2), retain=10)
     print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
     print("average_distance_with_filter: {}".format(np.mean(eu_distance * threshold_conn, where=(threshold_conn != 0))))
+
     return threshold_conn
+
+def threshold_filter(df_connectivity_matrix):
+
+    np_threshold = threshold_matrix(df_connectivity_matrix)
+    df_mult = df_connectivity_matrix.set_index(["subject","roi"])
+
+    mask_data = df_mult * np_threshold
+    
+    # Calculate link density of matrix before filtering
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    total_possible_connections = (np_connectivity_matrix.shape[0] * (np_connectivity_matrix.shape[0] - 1)) / 2 
+    actual_connections = np.count_nonzero(np.triu(np_connectivity_matrix))
+    link_density = actual_connections / total_possible_connections * 100
+    print(f"Link Density before filter: {link_density}%")
+
+    # Calculate link density of matrix after filtering
+    np_mask_data = mask_data.to_numpy()
+    actual_connections_filtered = np.count_nonzero(np.triu(np_mask_data))
+    link_density_filtered = actual_connections_filtered / total_possible_connections * 100
+    print(f"Link Density after filter: {link_density_filtered}%")
+
+    return mask_data
+    
+
 
 #def filter_no_connections(df_connectivity_matrix):
     #df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
@@ -159,7 +184,7 @@ def threshold_filter(df_connectivity_matrix):
 
 def scilpy_filter(df_connectivity_matrix, session):
     """
-    Each node with a value of 1 represents a node with at least 90% of the population having at least 1 streamline
+    Each edge with a value of 1 represents an edge with at least 90% of the population having at least 1 streamline
     and at least 90% of the population having at least 20mm of average streamlines length. 
     Population is all clbp and control subjects
 
@@ -202,6 +227,20 @@ def scilpy_filter(df_connectivity_matrix, session):
     elif session == 'all':
         mask_all = mask_v1_con_len * mask_v1_clbp_len * mask_v1_con_sc * mask_v1_clbp_sc * mask_v2_con_len * mask_v2_clbp_len * mask_v2_con_sc * mask_v2_clbp_sc * mask_v3_con_len * mask_v3_clbp_len * mask_v3_con_sc * mask_v3_clbp_sc
         mask_data = df_mult * mask_all
+
+    # Calculate link density of matrix before filtering
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    total_possible_connections = (np_connectivity_matrix.shape[0] * (np_connectivity_matrix.shape[0] - 1)) / 2 
+    actual_connections = np.count_nonzero(np.triu(np_connectivity_matrix))
+    link_density = actual_connections / total_possible_connections * 100
+    print(f"Link Density before filter: {link_density}%")
+
+    # Calculate link density of matrix after filtering
+    np_mask_data = mask_data.to_numpy()
+    actual_connections_filtered = np.count_nonzero(np.triu(np_mask_data))
+    link_density_filtered = actual_connections_filtered / total_possible_connections * 100
+    print(f"Link Density after filter: {link_density_filtered}%")
+
     return mask_data
 
 

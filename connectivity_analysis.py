@@ -109,8 +109,9 @@ def main():
     # df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
     # df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
 
-    # ### Select data and filters to apply
-    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
+    ### Select data and filters to apply
+    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='threshold')
+    print(df_clean_clbp_v1)
     
     """
     To calculate z-score and friedman test of graph theory metrics analysis with bct based on sex
