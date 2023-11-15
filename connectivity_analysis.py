@@ -40,10 +40,9 @@ from functions.connectivity_figures import plot_network, circle_graph, histogram
 from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter
 from functions.connectivity_processing import data_processor
 from functions.connectivity_read_files import find_files_with_common_name
-from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_global_efficiency, compute_small_world, compute_shortest_path
+from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_global_efficiency, compute_small_world, compute_shortest_path, random_matrix
 from functions.connectivity_stats import mean_matrix, z_score, friedman, nbs_data, my_icc, icc
 from functions.gtm_nx import networkx_graph_convertor
-
 
 
 def get_parser():
@@ -110,9 +109,11 @@ def main():
     # df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
 
     ### Select data and filters to apply
-    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='threshold')
-    print(df_clean_clbp_v1)
+    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
     
+    sub_007 = df_clean_clbp_v1.loc[('sub-pl007', 'sub-pl007'), :]
+    rand_007 = random_matrix(sub_007)
+    rand_007.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/rand.csv')
     """
     To calculate z-score and friedman test of graph theory metrics analysis with bct based on sex
     """

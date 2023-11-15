@@ -98,28 +98,35 @@ def compute_global_efficiency(df_connectivity_matrix):
     global_efficiency = bct.efficiency_wei(np_connectivity_matrix)
     return global_efficiency
 
-def random_reorder_nonzero(df_connectivity_matrix):
+def random_matrix(df_connectivity_matrix):
     # convert DataFrame to a NumPy array
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
-    # Find the non-zero elements in the matrix
-    nonzero_indices = np.nonzero(np_connectivity_matrix)
-    # Get the non-zero values and shuffle them randomly
-    nonzero_values = np_connectivity_matrix[nonzero_indices]
-    np.random.shuffle(nonzero_values)
-    # Create a copy of the original matrix and fill it with the shuffled non-zero values
-    reordered_matrix = np.copy(np_connectivity_matrix)
-    reordered_matrix[nonzero_indices] = nonzero_values
-    df_randomized_matrix = pd.DataFrame(reordered_matrix)
-    return df_randomized_matrix
+    # print number of edges and nodes of current graph
+    num_edges = np.count_nonzero(np_connectivity_matrix)
+    num_nodes = np_connectivity_matrix.shape[0]
+    print("Number of edges (original graph):", num_edges)
+    print("Number of nodes (original graph):", num_nodes)
+    # Create random graph
+    num_iter = 10 
+    rand_result = bct.randmio_und(np_connectivity_matrix, num_iter)
+    rand_graph = rand_result[0]
+    np_rand_graph = np.array(rand_graph)
+    num_edges_r = np.count_nonzero(np_rand_graph)
+    num_nodes_r = np_rand_graph.shape[0]
+    print("Number of edges (random graph):", num_edges_r)
+    print("Number of nodes (random graph):", num_nodes_r)
+    df_rand_connectivity_matrix = pd.DataFrame(np_rand_graph, index=df_connectivity_matrix.index, columns=df_connectivity_matrix.columns)
+    return df_rand_connectivity_matrix
 
 def compute_small_world(df_connectivity_matrix):
-    rand_np_connectivity_matrix = random_reorder_nonzero(df_connectivity_matrix)
+    df_rand_connectivity_matrix = random_matrix(df_connectivity_matrix)
+    np_rand_connectivity_matrix = df_rand_connectivity_matrix.to_numpy()
     cluster_coeff = compute_cluster(df_connectivity_matrix)
     avg_cluster_coeff = np.mean(cluster_coeff)
     shortest_path = compute_shortest_path(df_connectivity_matrix)
-    cluster_coeff_rand = compute_cluster(rand_np_connectivity_matrix)
+    cluster_coeff_rand = compute_cluster(np_rand_connectivity_matrix)
     avg_cluster_coeff_rand = np.mean(cluster_coeff_rand)
-    shortest_path_rand = compute_shortest_path(rand_np_connectivity_matrix)
+    shortest_path_rand = compute_shortest_path(np_rand_connectivity_matrix)
     sigma = (avg_cluster_coeff / avg_cluster_coeff_rand) / (shortest_path / shortest_path_rand)
     
     return sigma
