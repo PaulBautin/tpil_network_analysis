@@ -100,6 +100,23 @@ def z_score(df_con_v1, df_clbp_v1):
     df_anor_mean = mean_matrix(df_anor)
     return df_anor_mean
 
+def difference(df_con, df_clbp):
+    """
+    Returns mean difference between clbp and con data for a given roi
+
+    Parameters
+    ----------
+    df_con_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clbp_v1 : (N,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    df_diff : (N, N) pandas DataFrame
+    """
+    df_diff = (df_clbp - df_con)
+    
+    return df_diff
+
 def nbs_data(df_con_v1, df_clbp_v1, save_path):
     """
     Performs Network-based statistics between clbp and control group and save the results in results_nbs

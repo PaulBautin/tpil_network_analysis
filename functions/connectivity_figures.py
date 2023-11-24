@@ -34,7 +34,8 @@ from functions.connectivity_read_files import find_files_with_common_name
 from netneurotools.plotting import plot_point_brain
 from netneurotools.metrics import degrees_und
 from functions.connectivity_filtering import load_brainnetome_centroids
-
+from functions.connectivity_stats import mean_matrix, difference, z_score
+from scipy.stats import linregress
 
 def get_parser():
     """parser function"""
@@ -246,6 +247,67 @@ def histogram(np_connectivity_matrix):
     ax.set_xticklabels([f'{bin:.2f}' for bin in bins])
     
     return hist, bins
+
+def disruption_index(df_connectivity_con, df_connectivity_clbp):
+    """
+    Measures disruption of degree in individual subjects compared to control
+    
+    Parameters
+    ----------
+    df_connectivity_matrix_con : (1,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_connectivity_matrix_clbp : (1,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    
+    """
+    # Mean degree of control pop
+    df_x = mean_matrix(df_connectivity_con)
+    # Z-score difference of degree between studied pop and control pop
+    df_y = df_connectivity_clbp.groupby('subject').apply(lambda x:difference(df_x, x))
+    # Merge df_x and df_y together
+    df_merged = pd.merge(df_x, df_y, left_index=True, right_index=True)
+    # Reset index for easier plotting
+    df_merged_reset = df_merged.reset_index()
+    # Get unique subjects
+    subjects = df_merged_reset['subject'].unique()
+    num_subjects = len(subjects)
+    # Set up subplots
+    fig, axes = plt.subplots(nrows= 5, ncols= 5, figsize=(15, 15))
+    # Iterate over subjects
+    for i, subject in enumerate(subjects):
+        # Specify subplot location
+        row = i // 5
+        col = i % 5
+        ax = axes[row, col]
+        # Extract data for the current subject
+        subject_data = df_merged_reset[df_merged_reset['subject'] == subject]
+        x_data = subject_data['centrality_x'].to_numpy()
+        y_data = subject_data['centrality_y'].to_numpy()
+        # Scatter plot
+        ax.scatter(x_data, y_data)
+        # Linear regression
+        slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
+
+        # Plot the regression line
+        regression_line = intercept + slope * x_data
+        ax.plot(x_data, regression_line, color='red', label=f'Regression Line: y = {slope:.2f}x + {intercept:.2f}')
+
+        # Annotate the plot with regression equation and correlation coefficient
+        equation = f'R² = {r_value**2:.2f}'
+        ax.annotate(equation, xy=(0.05, 0.9), xycoords='axes fraction', fontsize=10, color='red')
+
+        # Add labels and legend
+        ax.set_xlabel('X-axis')
+        ax.set_ylabel('Y-axis')
+        ax.legend()
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+    # Show the plot
+    plt.show()
+    
+
 
 
 def main():

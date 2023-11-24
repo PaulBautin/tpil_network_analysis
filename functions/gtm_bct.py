@@ -65,6 +65,12 @@ def compute_degree(df_connectivity_matrix):
     df_centrality = pd.DataFrame(centrality, columns=['centrality'])
     return df_centrality
 
+def compute_strength(df_connectivity_matrix):
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    centrality = bct.strengths_und(np_connectivity_matrix)
+    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    return df_centrality
+
 def compute_betweenness(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.betweenness_wei(np_connectivity_matrix)
@@ -120,16 +126,22 @@ def random_matrix(df_connectivity_matrix):
 
 def compute_small_world(df_connectivity_matrix):
     df_rand_connectivity_matrix = random_matrix(df_connectivity_matrix)
-    np_rand_connectivity_matrix = df_rand_connectivity_matrix.to_numpy()
+    # np_rand_connectivity_matrix = df_rand_connectivity_matrix.to_numpy()
     cluster_coeff = compute_cluster(df_connectivity_matrix)
     avg_cluster_coeff = np.mean(cluster_coeff)
     shortest_path = compute_shortest_path(df_connectivity_matrix)
-    cluster_coeff_rand = compute_cluster(np_rand_connectivity_matrix)
+    cluster_coeff_rand = compute_cluster(df_rand_connectivity_matrix)
     avg_cluster_coeff_rand = np.mean(cluster_coeff_rand)
-    shortest_path_rand = compute_shortest_path(np_rand_connectivity_matrix)
+    shortest_path_rand = compute_shortest_path(df_rand_connectivity_matrix)
     sigma = (avg_cluster_coeff / avg_cluster_coeff_rand) / (shortest_path / shortest_path_rand)
     
     return sigma
+
+def modularity_louvain(df_connectivity_matrix):
+    np_connectivity_matrix = df_connectivity_matrix.to_numpy()
+    A, B = bct.modularity_louvain_und(np_connectivity_matrix)
+    # df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    return A, B
 
 def main():
     """
