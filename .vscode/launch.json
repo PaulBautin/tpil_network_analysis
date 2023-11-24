@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["-clbp", "/home/mafor/dev_tpil/tpil_network_analysis/data/22-11-16_connectflow/clbp/sub-pl007_ses-v1/Compute_Connectivity/commit2_weights.csv",
+            "-con", "/home/mafor/dev_tpil/tpil_network_analysis/data/22-11-16_connectflow/clbp/sub-pl007_ses-v1/Compute_Connectivity/commit2_weights.csv"]
+        }
+    ]
+}
