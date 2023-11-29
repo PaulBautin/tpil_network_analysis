@@ -1,3 +1,17 @@
+from __future__ import division
+
+# !/usr/bin/env python
+# -*- coding: utf-8
+#########################################################################################
+#
+# script pour l'organisation de fichiers de connectivité structurelle
+#
+# example: python connectivity_analysis.py -i <results>
+# ---------------------------------------------------------------------------------------
+# Authors: Marc Antoine
+#
+#########################################################################################
+
 import os
 import shutil
 

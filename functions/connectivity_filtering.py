@@ -4,7 +4,7 @@ from __future__ import division
 # -*- coding: utf-8
 #########################################################################################
 #
-# script pour l'analyse de la connectivite avec commmit2
+# Fonctions pour filtrer la connectivité structurelle
 #
 # example: python connectivity_analysis.py -clbp <dir> -con <dir>
 # ---------------------------------------------------------------------------------------
@@ -21,57 +21,9 @@ from __future__ import division
 
 import pandas as pd
 import numpy as np
-import os
-import argparse
-import matplotlib
-
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as colors
-import glob
-from functions.connectivity_read_files import find_files_with_common_name
 from netneurotools.utils import get_centroids
 from netneurotools.networks import threshold_network, struct_consensus
 from scipy.spatial.distance import squareform, pdist
-
-
-
-def get_parser():
-    """parser function"""
-    parser = argparse.ArgumentParser(
-        description="Compute statistics based on the .csv files containing the tractometry metrics:",
-        formatter_class=argparse.RawTextHelpFormatter,
-        prog=os.path.basename(__file__).strip(".py")
-    )
-
-    mandatory = parser.add_argument_group("\nMANDATORY ARGUMENTS")
-    mandatory.add_argument(
-        "-clbp",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
-    )
-    mandatory.add_argument(
-        "-con",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
-    )
-    optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
-    optional.add_argument(
-        '-fig',
-        help='Generate figures',
-        action='store_true'
-    )
-    optional.add_argument(
-        '-o',
-        help='Path where figures will be saved. By default, they will be saved in the current directory.',
-        default="."
-    )
-    return parser
-
-
 
 def load_brainnetome_centroids(image="/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all.nii.gz"):
     """
@@ -159,8 +111,6 @@ def threshold_filter(df_connectivity_matrix):
     print(f"Link Density after filter: {link_density_filtered}%")
 
     return mask_data
-    
-
 
 #def filter_no_connections(df_connectivity_matrix):
     #df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
@@ -182,7 +132,7 @@ def threshold_filter(df_connectivity_matrix):
     #df_mean_matrix[df_mean_matrix < 1] = 0
     #return df_mean_matrix
 
-def scilpy_filter(df_connectivity_matrix, session):
+def scilpy_filter(df_connectivity_matrix, session, print_density=True):
     """
     Each edge with a value of 1 represents an edge with at least 90% of the population having at least 1 streamline
     and at least 90% of the population having at least 20mm of average streamlines length. 
@@ -233,13 +183,15 @@ def scilpy_filter(df_connectivity_matrix, session):
     total_possible_connections = (np_connectivity_matrix.shape[0] * (np_connectivity_matrix.shape[0] - 1)) / 2 
     actual_connections = np.count_nonzero(np.triu(np_connectivity_matrix))
     link_density = actual_connections / total_possible_connections * 100
-    print(f"Link Density before filter: {link_density}%")
-
+    
     # Calculate link density of matrix after filtering
     np_mask_data = mask_data.to_numpy()
     actual_connections_filtered = np.count_nonzero(np.triu(np_mask_data))
     link_density_filtered = actual_connections_filtered / total_possible_connections * 100
-    print(f"Link Density after filter: {link_density_filtered}%")
+    
+    if print_density:
+        print(f"Link Density before filter: {link_density}%")
+        print(f"Link Density after filter: {link_density_filtered}%")
 
     return mask_data
 
@@ -294,29 +246,3 @@ def sex_filter(df_connectivity_matrix, sex='F ', condition='clbp'):
         raise ValueError("Invalid combination of sex and condition")
 
     return df_cleaned
-
-def main():
-    """
-    main function, gather stats and call plots
-    """
-    ### Get parser elements
-    parser = get_parser()
-    arguments = parser.parse_args()
-    path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
-    path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
-    path_output = os.path.abspath(arguments.o)
-
-    df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
-    df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
-
-    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
-
-    dist_filter = distance_dependant_filter(df_con_v1)
-    
-    thresh_filter = threshold_filter(df_con_v1)
-
-    scil_filter = scilpy_filter(df_con_v1)
-
-if __name__ == "__main__":
-    main()

@@ -4,7 +4,7 @@ from __future__ import division
 # -*- coding: utf-8
 #########################################################################################
 #
-# script pour l'analyse de la connectivite avec commmit2
+# Fonction pour préparer l'analyse de la connectivité structurelle
 #
 # example: python connectivity_analysis.py -clbp <dir> -con <dir>
 # ---------------------------------------------------------------------------------------
@@ -21,49 +21,10 @@ from __future__ import division
 
 import pandas as pd
 import numpy as np
-import os
-import argparse
-from functions.connectivity_read_files import find_files_with_common_name
 from functions.connectivity_filtering import scilpy_filter, distance_dependant_filter, threshold_filter, sex_filter
 
 
-
-
-def get_parser():
-    """parser function"""
-    parser = argparse.ArgumentParser(
-        description="Compute statistics based on the .csv files containing the tractometry metrics:",
-        formatter_class=argparse.RawTextHelpFormatter,
-        prog=os.path.basename(__file__).strip(".py")
-    )
-
-    mandatory = parser.add_argument_group("\nMANDATORY ARGUMENTS")
-    mandatory.add_argument(
-        "-clbp",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
-    )
-    mandatory.add_argument(
-        "-con",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
-    )
-    optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
-    optional.add_argument(
-        '-fig',
-        help='Generate figures',
-        action='store_true'
-    )
-    optional.add_argument(
-        '-o',
-        help='Path where figures will be saved. By default, they will be saved in the current directory.',
-        default="."
-    )
-    return parser
-
-def prepare_data(df_connectivity_matrix, absolute=True):
+def prepare_data(df_connectivity_matrix, absolute=False):
     """
     Returns Data in the appropriate format for figure functions
 
@@ -162,5 +123,3 @@ def data_processor(df_connectivity_matrix, session='v1', condition='clbp', sex=N
         df_clean_sex_filtered = df_sex_filtered
     
     return df_clean_sex_filtered
-
-        

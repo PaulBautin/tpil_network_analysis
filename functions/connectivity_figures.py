@@ -2,7 +2,7 @@
 # -*- coding: utf-8
 #########################################################################################
 #
-# script pour l'analyse de la connectivite avec commmit2
+# Fonctions pour créer figures des analyses de la connectivité structurelle
 #
 # example: python connectivity_analysis.py -i <results>
 # ---------------------------------------------------------------------------------------
@@ -37,40 +37,6 @@ from functions.connectivity_filtering import load_brainnetome_centroids
 from functions.connectivity_stats import mean_matrix, difference, z_score
 from scipy.stats import linregress
 
-def get_parser():
-    """parser function"""
-    parser = argparse.ArgumentParser(
-        description="Compute statistics based on the .csv files containing the tractometry metrics:",
-        formatter_class=argparse.RawTextHelpFormatter,
-        prog=os.path.basename(__file__).strip(".py")
-    )
-
-    mandatory = parser.add_argument_group("\nMANDATORY ARGUMENTS")
-    mandatory.add_argument(
-        "-clbp",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
-    )
-    mandatory.add_argument(
-        "-con",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
-    )
-    optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
-    optional.add_argument(
-        '-fig',
-        help='Generate figures',
-        action='store_true'
-    )
-    optional.add_argument(
-        '-o',
-        help='Path where figures will be saved. By default, they will be saved in the current directory.',
-        default="."
-    )
-    return parser
-
 def connectivity_matrix_viewer(conn_matrix):
     """
     Prints connectivity_matrix
@@ -83,7 +49,11 @@ def connectivity_matrix_viewer(conn_matrix):
     -------
     fig : :class:`matplotlib.figure.Figure`
     """
-    plt.imshow(np.log(conn_matrix[:,:,0]), cmap='RdYlBu')
+    conn_matrix = conn_matrix.droplevel(1)
+    conn_matrix_reset = conn_matrix.reset_index()
+    np_conn_matrix = np.dstack(
+        list(conn_matrix_reset.groupby(['subject']).apply(lambda x: x.set_index(['subject', 'roi']).to_numpy())))
+    plt.imshow(np.log(np_conn_matrix[:,:,0]), cmap='RdYlBu')
     plt.show()
 
 def plot_network(adj, coords):
@@ -112,7 +82,7 @@ def plot_network(adj, coords):
     edge_cmap = plt.get_cmap('RdYlBu')
     #norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
     norm = matplotlib.colors.Normalize(vmin=-2, vmax=2)
-    edge_val = edge_cmap(norm(adj[edges].flatten()))
+    edge_val = edge_cmap(norm(adj[edges[0], edges[1]].flatten()))
     # Plot the edges
     for edge_i, edge_j, c in zip(edges[0], edges[1], edge_val):
         x1, x2 = coords[edge_i, 0], coords[edge_j, 0]
@@ -162,7 +132,7 @@ def circle_graph(np_connectivity_matrix):
     fig : :class:`matplotlib.figure.Figure`
     """
     np_connectivity_matrix[np.isnan(np_connectivity_matrix)] = 0
-    A = np_connectivity_matrix
+    A = np_connectivity_matrix.astype(float)
     N = A.shape[0] #length of matrix
     # x/y coordinates of nodes in a circular layout
     r = 1
@@ -180,10 +150,10 @@ def circle_graph(np_connectivity_matrix):
     sns.set(style="whitegrid")
     plt.figure(figsize=(8, 8))
     # show nodes and edges
-    line_plot = plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker="o", markersize=10, color="steelblue", alpha=0.7)
+    plt.plot(xy[:, 0], xy[:, 1], linestyle="none", marker="o", markersize=10, color="steelblue", alpha=0.7)
     for i in range(N):
         for j in range(i + 1, N):
-            if A[i, j] > 2:  # Considers all non-zero edge intensities
+            if A[i, j] != 0:  # Considers all non-zero edge intensities
                 edge_color = A[i, j]  # Use the edge intensity as the color value
                 plt.plot([xy[i, 0], xy[j, 0]], [xy[i, 1], xy[j, 1]], color=cm.viridis(edge_color), linewidth=1)
                 label_x_i = xy[i, 0] * 1.22  # Adjust label positioning for node i
@@ -245,6 +215,9 @@ def histogram(np_connectivity_matrix):
     # Add ticks to show bin edges
     ax.set_xticks(bins)
     ax.set_xticklabels([f'{bin:.2f}' for bin in bins])
+
+    # Display histogram
+    plt.show()
     
     return hist, bins
 
@@ -301,75 +274,10 @@ def disruption_index(df_connectivity_con, df_connectivity_clbp):
         ax.set_xlabel('X-axis')
         ax.set_ylabel('Y-axis')
         ax.legend()
-
+        # Add title with subject ID
+        ax.set_title(f'Subject {subject}')
     # Adjust layout to prevent overlap
     plt.tight_layout()
     # Show the plot
     plt.show()
     
-
-
-
-def main():
-    """
-    main function, gather stats and call plots
-    """
-    ### Get parser elements
-    parser = get_parser()
-    arguments = parser.parse_args()
-    path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
-    path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
-    path_output = os.path.abspath(arguments.o)
-
-    df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
-    df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
-
-    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
-
-    # transform to 3d numpy array (N, N, S) with N nodes and S subjects
-    np_con_v1 = np.dstack(
-        list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject', 'roi']).to_numpy())))
-
-
-    #connectivity_matrix_viewer(np_con_v1)
-    plot_network(np_con_v1[:,:,0], load_brainnetome_centroids())
-    #print(degrees_und(np_con_v1[:,:,:]))
-    plot_point_brain(degrees_und(np_con_v1[:,:,0]), load_brainnetome_centroids(), views='ax', views_size=(8,4.8))
-    plt.show()
-
-    """
-    To create a network graph of z-score connectivity of Commit2_weights.csv of clbp at v1 and v2 after scilpy filtering
-    """   
-    # ### Scilpy filter on commit2_weights data
-    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    # mask_clbp_commit2_v2 = df_clbp_v2.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    # mask_clbp_commit2_v3 = df_clbp_v3.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    # mask_clbp_commit2_v1.index.names = ['subject', 'unused', 'roi']
-    # mask_clbp_commit2_v2.index.names = ['subject', 'unused', 'roi']
-    # mask_clbp_commit2_v3.index.names = ['subject', 'unused', 'roi']
-    # df_reset_v1 = mask_clbp_commit2_v1.droplevel(level='unused')
-    # df_reset_v2 = mask_clbp_commit2_v2.droplevel(level='unused')
-    # df_reset_v3 = mask_clbp_commit2_v3.droplevel(level='unused')
-    # df_clean_v1 = data_cleaner(df_reset_v1)
-    # df_clean_v2 = data_cleaner(df_reset_v2)
-    # df_clean_v3 = data_cleaner(df_reset_v3)
-    # ### Load numpy array of v1 and v2 and calculate delta
-    # delta_v3_v2 = df_clean_v3 - df_clean_v2
-    # delta_v2_v1 = df_clean_v2 - df_clean_v1
-    # ### Mean of mask_clbp_commit2 connectivity matrix for df_connectivity_matrix of networkx_graph_convertor
-    # df_clbp_mean_filter = mean_matrix(df_clean_v1)
-    # df_clbp_mean_v2 = mean_matrix(df_clean_v2)
-    # df_clbp_mean_v3 = mean_matrix(df_clean_v3)
-    # df_clbp_mean_delta = mean_matrix(delta_v2_v1)
-    # df_v1 = prepare_data(df_clbp_mean_filter)
-    # df_v2 = prepare_data(df_clbp_mean_v2)
-    # df_v3 = prepare_data(df_clbp_mean_v3)
-    # ### Load figure
-    # figure_data = prepare_data(df_clbp_mean_delta, absolute=False)
-    
-    # plot_network(figure_data, load_brainnetome_centroids())
-
-
-if __name__ == "__main__":
-    main()

@@ -4,7 +4,7 @@ from __future__ import division
 # -*- coding: utf-8
 #########################################################################################
 #
-# script pour l'analyse de la connectivite avec commmit2
+# Fonctions pour lire des fichiers de connectivité structurelle
 #
 # example: python connectivity_analysis.py -i <results>
 # ---------------------------------------------------------------------------------------

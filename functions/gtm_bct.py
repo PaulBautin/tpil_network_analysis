@@ -4,7 +4,7 @@ from __future__ import division
 # -*- coding: utf-8
 #########################################################################################
 #
-# script pour l'analyse de la connectivite avec commmit2
+# Fonctions pour l'analyse de la connectivité structurelle avec la théorie des graphes de bct
 #
 # example: python connectivity_analysis.py -i <results>
 # ---------------------------------------------------------------------------------------
@@ -20,44 +20,30 @@ from __future__ import division
 
 import pandas as pd
 import numpy as np
-import os
-import argparse
 import bct
-from functions.connectivity_read_files import find_files_with_common_name
 
-def get_parser():
-    """parser function"""
-    parser = argparse.ArgumentParser(
-        description="Compute statistics based on the .csv files containing the tractometry metrics:",
-        formatter_class=argparse.RawTextHelpFormatter,
-        prog=os.path.basename(__file__).strip(".py")
-    )
-
-    mandatory = parser.add_argument_group("\nMANDATORY ARGUMENTS")
-    mandatory.add_argument(
-        "-clbp",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
-    )
-    mandatory.add_argument(
-        "-con",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
-    )
-    optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
-    optional.add_argument(
-        '-fig',
-        help='Generate figures',
-        action='store_true'
-    )
-    optional.add_argument(
-        '-o',
-        help='Path where figures will be saved. By default, they will be saved in the current directory.',
-        default="."
-    )
-    return parser
+def bct_master(df_connectivity_matrix, metric_name, **kwargs):
+    # Permitted metrics for analysis
+    metric_fcts = {
+        'degree_centrality': compute_degree,
+        'strength_centrality': compute_strength,
+        'betweenness_centrality': compute_betweenness,
+        'eigenvector_centrality': compute_eigenvector,
+        'cluster_coefficient': compute_cluster,
+        'shortest_path': compute_shortest_path,
+        'global_efficiency': compute_global_efficiency,
+        'small_world': compute_small_world,
+        'modularity': modularity_louvain
+    }
+    # Check if the specified metric is in the dictionary
+    if metric_name in metric_fcts:
+        # Call the corresponding metric function with the connectivity matrix and additional parameters
+        metric_fct = metric_fcts[metric_name]
+        result = metric_fct(df_connectivity_matrix, **kwargs)
+        return result
+    else:
+        print("Invalid metric name. Supported metrics:", list(metric_fcts.keys()))
+        return None
 
 def compute_degree(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
@@ -142,28 +128,3 @@ def modularity_louvain(df_connectivity_matrix):
     A, B = bct.modularity_louvain_und(np_connectivity_matrix)
     # df_centrality = pd.DataFrame(centrality, columns=['centrality'])
     return A, B
-
-def main():
-    """
-    main function, gather stats and call plots
-    """
-    ### Get parser elements
-    parser = get_parser()
-    arguments = parser.parse_args()
-    path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
-    path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
-    path_output = os.path.abspath(arguments.o)
-    
-    ### Get connectivity data
-    df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
-    df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
-    ### work only on one session at a time
-    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
-    df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
-    df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
-    df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
-    df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
-
-    if __name__ == "__main__":
-        main()

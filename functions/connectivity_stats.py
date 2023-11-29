@@ -4,7 +4,7 @@ from __future__ import division
 # -*- coding: utf-8
 #########################################################################################
 #
-# script pour l'analyse de la connectivite avec commmit2
+# Fonctions pour l'analyse statistique de la connectivité structurelle
 #
 # example: python connectivity_analysis.py -i <results>
 # ---------------------------------------------------------------------------------------
@@ -20,50 +20,11 @@ from __future__ import division
 
 import pandas as pd
 import numpy as np
-import os
-import argparse
 import bct
 import pingouin as pg
-import matplotlib
 from functions.connectivity_read_files import find_files_with_common_name
-from scipy.stats import ttest_rel
-from scipy.stats import t
-from scipy.stats import zscore
+from scipy.stats import ttest_rel, t
 from scipy import stats
-
-def get_parser():
-    """parser function"""
-    parser = argparse.ArgumentParser(
-        description="Compute statistics based on the .csv files containing the tractometry metrics:",
-        formatter_class=argparse.RawTextHelpFormatter,
-        prog=os.path.basename(__file__).strip(".py")
-    )
-
-    mandatory = parser.add_argument_group("\nMANDATORY ARGUMENTS")
-    mandatory.add_argument(
-        "-clbp",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
-    )
-    mandatory.add_argument(
-        "-con",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
-    )
-    optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
-    optional.add_argument(
-        '-fig',
-        help='Generate figures',
-        action='store_true'
-    )
-    optional.add_argument(
-        '-o',
-        help='Path where figures will be saved. By default, they will be saved in the current directory.',
-        default="."
-    )
-    return parser
 
 def mean_matrix(df_connectivity_matrix):
     """
@@ -183,11 +144,11 @@ def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
 
     Parameters
     ----------
-    df_centrality_v1 : pandas DataFrame
+    df_centrality_v1 : (1, SxN) pandas DataFrame
         DataFrame containing centrality data for version 1.
-    df_centrality_v2 : pandas DataFrame
+    df_centrality_v2 : (1, SxN) pandas DataFrame
         DataFrame containing centrality data for version 2.
-    df_centrality_v3 : pandas DataFrame
+    df_centrality_v3 : (1, SxN) pandas DataFrame
         DataFrame containing centrality data for version 3.
 
     Returns
@@ -195,14 +156,14 @@ def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
     df_results : pandas DataFrame
         DataFrame of chi-square statistic and p-value for each ROI.
     """
-    unique_rois = df_centrality_v1['roi'].unique()
+    unique_rois = df_centrality_v1.index.get_level_values('roi').unique()
     results_statistics = []
     results_pval = []
 
     for roi in unique_rois:
-        roi_data_v1 = df_centrality_v1[df_centrality_v1['roi'] == roi]['centrality'].values
-        roi_data_v2 = df_centrality_v2[df_centrality_v2['roi'] == roi]['centrality'].values
-        roi_data_v3 = df_centrality_v3[df_centrality_v3['roi'] == roi]['centrality'].values
+        roi_data_v1 = df_centrality_v1.loc[df_centrality_v1.index.get_level_values('roi') == roi, 'centrality'].values
+        roi_data_v2 = df_centrality_v2.loc[df_centrality_v2.index.get_level_values('roi') == roi, 'centrality'].values
+        roi_data_v3 = df_centrality_v3.loc[df_centrality_v3.index.get_level_values('roi') == roi, 'centrality'].values
 
         result = stats.friedmanchisquare(roi_data_v1, roi_data_v2, roi_data_v3)
         results_statistics.append({'roi': roi, 'statistic': result.statistic})
@@ -210,7 +171,9 @@ def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
 
     # Create DataFrames to store the results
     df_results_stats = pd.DataFrame(results_statistics)
+    df_results_stats.set_index('roi', inplace=True)
     df_results_pval = pd.DataFrame(results_pval)
+    df_results_pval.set_index('roi', inplace=True)
 
     return df_results_stats, df_results_pval
     
@@ -221,9 +184,9 @@ def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
 
     Parameters
     ----------
-    df_clean_centrality_v1 : (1, N) pandas DataFrame where N is the number of nodes 
-    df_clean_centrality_v2 : (1, N) pandas DataFrame where N is the number of nodes
-    df_clean_centrality_v3 : (1, N) pandas DataFrame where N is the number of nodes
+    df_clean_centrality_v1 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clean_centrality_v2 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clean_centrality_v3 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
 
     Returns
     -------
@@ -234,14 +197,10 @@ def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
     df_clean_centrality_v3.insert(1, "session", 3, True)
     df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
     df_concat_reset = df_concat.reset_index()
-    df_concat_reset['centrality'] = df_concat_reset['centrality']
-    print(df_concat)
-    print(df_concat_reset)
-    # print(df_concat_reset.groupby(['roi','session']).std())
-    # print(df_concat_reset.groupby(['subject', 'roi']).std())
-    icc = pg.intraclass_corr(data=df_concat_reset, targets='roi', raters='session', ratings='centrality')
+    icc = pg.intraclass_corr(data=df_concat_reset, targets='subject', raters='session', ratings='centrality')
     icc.set_index('Type')
-    print(icc)
+    print("intraclass correlation coefficient:", icc)
+    
     return icc
     
 def my_icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
@@ -251,9 +210,9 @@ def my_icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v
 
     Parameters
     ----------
-    df_clean_centrality_v1 : (1, N) pandas DataFrame where N is the number of nodes 
-    df_clean_centrality_v2 : (1, N) pandas DataFrame where N is the number of nodes
-    df_clean_centrality_v3 : (1, N) pandas DataFrame where N is the number of nodes
+    df_clean_centrality_v1 : (1, SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clean_centrality_v2 : (1, SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clean_centrality_v3 : (1, SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
 
     Returns
     -------
@@ -265,49 +224,20 @@ def my_icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v
     df_clean_centrality_v3.insert(1, "session", 3, True)
     # Merge DataFrames togetther and reorder index
     df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
-    df_concat_reset = df_concat.reset_index()
-    df_concat_reset['centrality'] = df_concat_reset['centrality']
+    
     # Within-subject Variance: variance of time points for each subject in each region
-    within_sub_var = df_concat_reset.groupby(['subject', 'roi']).var()
-    print(within_sub_var)
-    within_sub_var_region = mean_matrix(within_sub_var)
-    print("within-subject variance per region:", within_sub_var_region)
-    within_sub_var_mean = within_sub_var_region['centrality'].mean()
-    print("within-subject/region variance:", within_sub_var_mean)
+    within_sub_var = df_concat.groupby(['subject', 'roi'])['centrality'].var()
+    print("Variability accross session for every roi in every subject", within_sub_var)
+    within_sub_var_mean = within_sub_var.mean()
+    print("within-subject variance:", within_sub_var_mean)
     # Between-subject Variance: variance of subjects
-    mean_session_centrality = df_concat_reset.groupby(['subject', 'roi'])['centrality'].mean().reset_index()
-    between_sub_var_region = mean_session_centrality.groupby('roi').var()
-    print("between-subject variance per region:", between_sub_var_region)
-    between_sub_var_mean = mean_session_centrality.var()
-    print("between-subject/region variance:", between_sub_var_mean)
+    between_sub_var = df_concat.groupby(['roi', 'session'])['centrality'].var()
+    print("Variability accross subjects for every session in every roi", between_sub_var)
+    between_sub_var_mean = between_sub_var.mean()
+    print("between-subject variance:", between_sub_var_mean)
+    
     # Calculate the ICC
     icc = (between_sub_var_mean - within_sub_var_mean) / (between_sub_var_mean + (3-1) * within_sub_var_mean)
     print("intraclass correlation coefficient:", icc)
-    icc_region = (between_sub_var_region - within_sub_var_region) / (between_sub_var_region + (3-1) * within_sub_var_region)
-    print("intraclass correlation coefficient per region:", icc_region)
-    print("mean icc_region:", icc_region['centrality'].mean())
 
-def main():
-    """
-    main function, gather stats and call plots
-    """
-    ### Get parser elements
-    parser = get_parser()
-    arguments = parser.parse_args()
-    path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
-    path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
-    path_output = os.path.abspath(arguments.o)
-
-    df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
-    df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
-
-    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
-    df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
-    df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
-    df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
-    df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
-
-
-if __name__ == "__main__":
-    main()
+    return icc
