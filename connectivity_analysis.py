@@ -118,8 +118,8 @@ def main():
     Prepare data for analysis
     """
     # ### Select data and filters to apply
-    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
-    df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
+    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
+    # df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
     # df_clean_clbp_v2 = data_processor(df_clbp_v1, session='v2', condition='clbp', filter='scilpy')
     # df_clean_clbp_v3 = data_processor(df_clbp_v1, session='v3', condition='clbp', filter='scilpy')
     # ### Work on a single subject. For testing purposes
@@ -142,7 +142,7 @@ def main():
     # z_score_v1 = z_score(centrality_con_v1, centrality_clbp_v1)
     # z_score_v2 = z_score(centrality_con_v2, centrality_clbp_v2)
     # z_score_v3 = z_score(centrality_con_v3, centrality_clbp_v3)
-    z_score_edges_v1 = z_score(df_clean_con_v1, df_clean_clbp_v1)
+    # z_score_edges_v1 = z_score(df_clean_con_v1, df_clean_clbp_v1)
     
     # ### Choose to store results
     # z_score_v1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/z_score_v1.csv') # Warning! Need to hard-code this!
