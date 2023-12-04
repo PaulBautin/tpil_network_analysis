@@ -48,13 +48,13 @@ def bct_master(df_connectivity_matrix, metric_name, **kwargs):
 def compute_degree(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.degrees_und(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
     return df_centrality
 
 def compute_strength(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.strengths_und(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
     return df_centrality
 
 def compute_betweenness(df_connectivity_matrix):

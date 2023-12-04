@@ -33,7 +33,8 @@ import glob
 import bct
 from functions.connectivity_processing import data_processor
 from functions.connectivity_read_files import find_files_with_common_name
-from functions.connectivity_figures import disruption_index
+from functions.connectivity_figures import disruption_index, disruption_index_combined
+from functions.gtm_bct import bct_master
 
 def get_parser():
     """parser function"""
@@ -100,12 +101,35 @@ def main():
     df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
 
     """
-    Fetch degree centrality
+    Prepare data for analysis
     """
-    centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
+    ### Select data and filters to apply
+    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
+    df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
+    df_clean_clbp_v2 = data_processor(df_clbp_v2, session='v2', condition='clbp', filter='scilpy')
+    df_clean_con_v2 = data_processor(df_con_v2, session='v2', condition='con', filter='scilpy')
+    df_clean_clbp_v3 = data_processor(df_clbp_v3, session='v3', condition='clbp', filter='scilpy')
+    df_clean_con_v3 = data_processor(df_con_v3, session='v3', condition='con', filter='scilpy')
+    
 
-    test = disruption_index(centrality_con_v1, centrality_clbp_v1)
+    """
+    Compute degree centrality
+    """
+    centrality_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    centrality_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    centrality_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    centrality_con_v1 = df_clean_con_v1.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    centrality_con_v2 = df_clean_con_v2.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    centrality_con_v3 = df_clean_con_v3.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    
+    disruption_index_combined(centrality_con_v1, centrality_clbp_v1)
+    # kd1 = disruption_index(centrality_con_v1, centrality_clbp_v1)
+    # kd2 = disruption_index(centrality_con_v2, centrality_clbp_v2)
+    # kd3 = disruption_index(centrality_con_v3, centrality_clbp_v3)
+
+    # kd1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_v1.csv')
+    # kd2.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_v2.csv')
+    # kd3.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_v3.csv')
 
 if __name__ == "__main__":
     main()

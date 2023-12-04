@@ -39,7 +39,7 @@ from statsmodels.stats.anova import AnovaRM
 from functions.connectivity_figures import plot_network, circle_graph, histogram, connectivity_matrix_viewer
 from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter
 from functions.connectivity_processing import data_processor, prepare_data
-from functions.connectivity_read_files import find_files_with_common_name
+from functions.connectivity_read_files import find_files_with_common_name, find_files_with_common_name_structural
 from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_global_efficiency, compute_small_world, compute_shortest_path, modularity_louvain, bct_master
 from functions.connectivity_stats import mean_matrix, z_score, friedman, nbs_data, my_icc, icc
 from functions.gtm_nx import networkx_graph_convertor
@@ -95,7 +95,7 @@ def main():
     """
     df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
     df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
-    ### work only on one session at a time
+    # ### work only on one session at a time
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
     df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
@@ -120,8 +120,8 @@ def main():
     # ### Select data and filters to apply
     # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
     # df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
-    # df_clean_clbp_v2 = data_processor(df_clbp_v1, session='v2', condition='clbp', filter='scilpy')
-    # df_clean_clbp_v3 = data_processor(df_clbp_v1, session='v3', condition='clbp', filter='scilpy')
+    # df_clean_clbp_v2 = data_processor(df_clbp_v2, session='v2', condition='clbp', filter='scilpy')
+    # df_clean_clbp_v3 = data_processor(df_clbp_v3, session='v3', condition='clbp', filter='scilpy')
     # ### Work on a single subject. For testing purposes
     # sub_007 = df_clean_clbp_v1.loc[('sub-pl007', 'sub-pl007'), :]
 

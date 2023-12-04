@@ -29,6 +29,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as colors
+import math
 import glob
 from functions.connectivity_read_files import find_files_with_common_name
 from netneurotools.plotting import plot_point_brain
@@ -236,22 +237,29 @@ def disruption_index(df_connectivity_con, df_connectivity_clbp):
     """
     # Mean degree of control pop
     df_x = mean_matrix(df_connectivity_con)
-    # Z-score difference of degree between studied pop and control pop
+    # Difference of degree between studied pop and control pop
     df_y = df_connectivity_clbp.groupby('subject').apply(lambda x:difference(df_x, x))
     # Merge df_x and df_y together
     df_merged = pd.merge(df_x, df_y, left_index=True, right_index=True)
     # Reset index for easier plotting
+    df_merged = df_merged.droplevel(1)
     df_merged_reset = df_merged.reset_index()
     # Get unique subjects
     subjects = df_merged_reset['subject'].unique()
     num_subjects = len(subjects)
+    # Dataframe to store slope values (kD)
+    df_kd = pd.DataFrame(columns=['subject', 'slope'])
+    # Set up subplots dynamically based on the number of subjects
+    num_subjects = len(subjects)
+    num_rows = math.ceil(num_subjects / 5)
+    num_cols = min(num_subjects, 5)
     # Set up subplots
-    fig, axes = plt.subplots(nrows= 5, ncols= 5, figsize=(15, 15))
+    fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(15, 15))
     # Iterate over subjects
     for i, subject in enumerate(subjects):
         # Specify subplot location
-        row = i // 5
-        col = i % 5
+        row = i // num_cols
+        col = i % num_cols
         ax = axes[row, col]
         # Extract data for the current subject
         subject_data = df_merged_reset[df_merged_reset['subject'] == subject]
@@ -261,23 +269,107 @@ def disruption_index(df_connectivity_con, df_connectivity_clbp):
         ax.scatter(x_data, y_data)
         # Linear regression
         slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
-
+        # Add title with subject ID
+        ax.set_title(f'Subject {subject}')
         # Plot the regression line
         regression_line = intercept + slope * x_data
         ax.plot(x_data, regression_line, color='red', label=f'Regression Line: y = {slope:.2f}x + {intercept:.2f}')
-
         # Annotate the plot with regression equation and correlation coefficient
         equation = f'R² = {r_value**2:.2f}'
         ax.annotate(equation, xy=(0.05, 0.9), xycoords='axes fraction', fontsize=10, color='red')
-
         # Add labels and legend
         ax.set_xlabel('X-axis')
         ax.set_ylabel('Y-axis')
         ax.legend()
-        # Add title with subject ID
-        ax.set_title(f'Subject {subject}')
+
+        # Append subject and slope values to DataFrame
+        df_kd = df_kd.append({'subject': subject, 'slope': slope}, ignore_index=True)
+        
     # Adjust layout to prevent overlap
     plt.tight_layout()
     # Show the plot
     plt.show()
     
+    return df_kd
+
+def disruption_index_combined(df_connectivity_con, df_connectivity_clbp):
+    """
+    Measures disruption of degree in individual subjects compared to control and plots all subjects on a single graph
+    
+    Parameters
+    ----------
+    df_connectivity_matrix_con : (1,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_connectivity_matrix_clbp : (1,SxN) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    df_kd : pandas DataFrame
+        DataFrame containing subject and slope values
+    """
+    # Mean degree of control pop
+    df_x = mean_matrix(df_connectivity_con)
+    
+    # Difference of degree between studied pop and control pop
+    df_y = df_connectivity_clbp.groupby('subject').apply(lambda x: difference(df_x, x))
+    
+    # Merge df_x and df_y together
+    df_merged = pd.merge(df_x, df_y, left_index=True, right_index=True)
+    
+    # Reset index for easier plotting
+    df_merged = df_merged.droplevel(1)
+    df_merged_reset = df_merged.reset_index()
+    
+    # Get unique subjects
+    subjects = df_merged_reset['subject'].unique()
+    
+    # Dataframe to store slope values (kD)
+    df_kd = pd.DataFrame(columns=['subject', 'slope'])
+    
+    # Set up the plot with a smaller figure size
+    plt.figure(figsize=(10, 6))
+
+    # Lists to store data for all subjects combined
+    combined_x_data = []
+    combined_y_data = []
+    
+    # Iterate over subjects
+    for subject in subjects:
+        # Extract data for the current subject
+        subject_data = df_merged_reset[df_merged_reset['subject'] == subject]
+        x_data = subject_data['centrality_x'].to_numpy()
+        y_data = subject_data['centrality_y'].to_numpy()
+        
+        # Append data to combined lists
+        combined_x_data.extend(x_data)
+        combined_y_data.extend(y_data)
+
+        # Scatter plot
+        plt.scatter(x_data, y_data, label=f'Subject {subject}')
+        
+        # Linear regression
+        slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
+        
+        # Plot the regression line
+        regression_line = intercept + slope * x_data
+        plt.plot(x_data, regression_line, label=f'{subject}, y = {slope:.2f}x + {intercept:.2f}', linestyle='dashed')
+        
+        # Append subject and slope values to DataFrame
+        df_kd = df_kd.append({'subject': subject, 'slope': slope}, ignore_index=True)
+    
+    # Linear regression for all subjects combined
+    slope_combined, intercept_combined, _, _, _ = linregress(combined_x_data, combined_y_data)
+    
+    # Plot the regression line for all subjects combined
+    regression_line_combined = intercept_combined + slope_combined * np.array(combined_x_data)
+    plt.plot(combined_x_data, regression_line_combined, label=f'Combined, y = {slope_combined:.2f}x + {intercept_combined:.2f}', linewidth=2, color='black')
+    
+    # Annotate the plot with labels and legend
+    plt.title('Disruption of Degree in Individual Subjects Compared to Control')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize='small')  # Adjust legend position and font size
+    
+    # Show the plot
+    plt.show()
+    
+    return df_kd
