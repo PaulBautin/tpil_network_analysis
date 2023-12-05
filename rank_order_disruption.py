@@ -122,14 +122,17 @@ def main():
     centrality_con_v2 = df_clean_con_v2.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
     centrality_con_v3 = df_clean_con_v3.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
     
-    disruption_index_combined(centrality_con_v1, centrality_clbp_v1)
+    kd1 = disruption_index_combined(centrality_con_v1, centrality_con_v1)
+    kd2 = disruption_index_combined(centrality_con_v2, centrality_con_v2)
+    kd3 = disruption_index_combined(centrality_con_v3, centrality_con_v3)
+
     # kd1 = disruption_index(centrality_con_v1, centrality_clbp_v1)
     # kd2 = disruption_index(centrality_con_v2, centrality_clbp_v2)
     # kd3 = disruption_index(centrality_con_v3, centrality_clbp_v3)
 
-    # kd1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_v1.csv')
-    # kd2.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_v2.csv')
-    # kd3.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_v3.csv')
+    kd1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_con_v1.csv')
+    kd2.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_con_v2.csv')
+    kd3.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/strength_commit_con_v3.csv')
 
 if __name__ == "__main__":
     main()

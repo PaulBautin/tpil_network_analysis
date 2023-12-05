@@ -39,7 +39,7 @@ from statsmodels.stats.anova import AnovaRM
 from functions.connectivity_figures import plot_network, circle_graph, histogram, connectivity_matrix_viewer
 from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter
 from functions.connectivity_processing import data_processor, prepare_data
-from functions.connectivity_read_files import find_files_with_common_name, find_files_with_common_name_structural
+from functions.connectivity_read_files import find_files_with_common_name
 from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_global_efficiency, compute_small_world, compute_shortest_path, modularity_louvain, bct_master
 from functions.connectivity_stats import mean_matrix, z_score, friedman, nbs_data, my_icc, icc
 from functions.gtm_nx import networkx_graph_convertor
@@ -65,6 +65,12 @@ def get_parser():
         required=True,
         default='connectivity_results',
         help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
+    )
+    mandatory.add_argument(
+        "-connectivity_type",
+        required=True,
+        default='connectivity_results',
+        help='type of connectivity data to work with (e.g. "commit2_weights.csv")',
     )
     optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
     optional.add_argument(
@@ -93,8 +99,8 @@ def main():
     """ 
     Get connectivity data
     """
-    df_con = find_files_with_common_name(path_results_con, "commit2_weights.csv")
-    df_clbp = find_files_with_common_name(path_results_clbp, "commit2_weights.csv")
+    df_con = find_files_with_common_name(path_results_con, arguments.connectivity_type)
+    df_clbp = find_files_with_common_name(path_results_clbp, arguments.connectivity_type)
     # ### work only on one session at a time
     df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
     df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
@@ -102,9 +108,6 @@ def main():
     df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
     df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
     df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
-    # ### Get similarity data
-    # df_con_sc = find_files_with_common_name(path_results_con, "sc.csv")
-    # df_clbp_sc = find_files_with_common_name(path_results_clbp, "sc.csv")
 
     ### Fetch graph theory metrics data
     centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/clbp/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
@@ -118,8 +121,8 @@ def main():
     Prepare data for analysis
     """
     # ### Select data and filters to apply
-    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
-    # df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
+    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
+    df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
     # df_clean_clbp_v2 = data_processor(df_clbp_v2, session='v2', condition='clbp', filter='scilpy')
     # df_clean_clbp_v3 = data_processor(df_clbp_v3, session='v3', condition='clbp', filter='scilpy')
     # ### Work on a single subject. For testing purposes
@@ -142,11 +145,11 @@ def main():
     # z_score_v1 = z_score(centrality_con_v1, centrality_clbp_v1)
     # z_score_v2 = z_score(centrality_con_v2, centrality_clbp_v2)
     # z_score_v3 = z_score(centrality_con_v3, centrality_clbp_v3)
-    # z_score_edges_v1 = z_score(df_clean_con_v1, df_clean_clbp_v1)
+    z_score_edges_v1 = z_score(df_clean_con_v1, df_clean_clbp_v1)
     
-    # ### Choose to store results
-    # z_score_v1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/betweenness_centrality/bct/z_score_v1.csv') # Warning! Need to hard-code this!
-    
+    ### Choose to store results
+    # z_score_edges_v1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_edges/z_score_afd_v1.csv') # Warning! Need to hard-code this!
+
     """
     Perform Friedman test of chosen metric
     """
@@ -173,19 +176,19 @@ def main():
     """
     Graph edges of chosen network
     """        
-    # figure_data = prepare_data(z_score_edges_v1)
+    figure_data = prepare_data(z_score_edges_v1)
     
-    # Graph adjacency matrix
-    # connectivity_matrix_viewer(df_clean_clbp_v1)
+    ### Graph adjacency matrix
+    connectivity_matrix_viewer(df_clean_clbp_v1)
 
-    # Graph histogram of network
+    ### Graph histogram of network
     # histogram(figure_data)
 
-    # Graph network as a circle
+    ### Graph network as a circle
     # circle_graph(figure_data)
 
-    # Graph network as a 3D brain
-    # plot_network(figure_data, load_brainnetome_centroids())
+    ### Graph network as a 3D brain
+    plot_network(figure_data, load_brainnetome_centroids())
 
     """
     To do NBS analysis of clbp and con Commit2_weights.csv and store results in NBS_results

@@ -306,12 +306,13 @@ def disruption_index_combined(df_connectivity_con, df_connectivity_clbp):
     df_kd : pandas DataFrame
         DataFrame containing subject and slope values
     """
-    # Mean degree of control pop
+    
+    # Mean degree of all pop
     df_x = mean_matrix(df_connectivity_con)
     
     # Difference of degree between studied pop and control pop
     df_y = df_connectivity_clbp.groupby('subject').apply(lambda x: difference(df_x, x))
-    
+    print(df_y)
     # Merge df_x and df_y together
     df_merged = pd.merge(df_x, df_y, left_index=True, right_index=True)
     
