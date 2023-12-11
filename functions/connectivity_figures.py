@@ -292,7 +292,7 @@ def disruption_index(df_connectivity_con, df_connectivity_clbp):
     
     return df_kd
 
-def disruption_index_combined(df_connectivity_con, df_connectivity_clbp):
+def disruption_index_combined(df_metric_con, df_metric_clbp, df_degree_con):
     """
     Measures disruption of degree in individual subjects compared to control and plots all subjects on a single graph
     
@@ -307,12 +307,15 @@ def disruption_index_combined(df_connectivity_con, df_connectivity_clbp):
         DataFrame containing subject and slope values
     """
     
-    # Mean degree of all pop
-    df_x = mean_matrix(df_connectivity_con)
+    # Mean degree of controls
+    df_x = mean_matrix(df_degree_con)
+    
+    # Mean metric of controls
+    mean_metric = mean_matrix(df_metric_con)
     
     # Difference of degree between studied pop and control pop
-    df_y = df_connectivity_clbp.groupby('subject').apply(lambda x: difference(df_x, x))
-    print(df_y)
+    df_y = df_metric_clbp.groupby('subject').apply(lambda x: difference(mean_metric, x))
+    
     # Merge df_x and df_y together
     df_merged = pd.merge(df_x, df_y, left_index=True, right_index=True)
     
@@ -355,7 +358,7 @@ def disruption_index_combined(df_connectivity_con, df_connectivity_clbp):
         plt.plot(x_data, regression_line, label=f'{subject}, y = {slope:.2f}x + {intercept:.2f}', linestyle='dashed')
         
         # Append subject and slope values to DataFrame
-        df_kd = df_kd.append({'subject': subject, 'slope': slope}, ignore_index=True)
+        df_kd = df_kd.append({'subject': subject, 'slope': slope, 'R²': r_value**2}, ignore_index=True)
     
     # Linear regression for all subjects combined
     slope_combined, intercept_combined, _, _, _ = linregress(combined_x_data, combined_y_data)
@@ -365,7 +368,7 @@ def disruption_index_combined(df_connectivity_con, df_connectivity_clbp):
     plt.plot(combined_x_data, regression_line_combined, label=f'Combined, y = {slope_combined:.2f}x + {intercept_combined:.2f}', linewidth=2, color='black')
     
     # Annotate the plot with labels and legend
-    plt.title('Disruption of Degree in Individual Subjects Compared to Control')
+    plt.title('Disruption of Metric of Interest in Individual Subjects Compared to Control')
     plt.xlabel('X-axis')
     plt.ylabel('Y-axis')
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize='small')  # Adjust legend position and font size

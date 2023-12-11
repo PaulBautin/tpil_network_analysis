@@ -60,19 +60,19 @@ def compute_strength(df_connectivity_matrix):
 def compute_betweenness(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.betweenness_wei(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
     return df_centrality
 
 def compute_eigenvector(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.eigenvector_centrality_und(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
     return df_centrality
 
 def compute_cluster(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.clustering_coef_wu(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
     return df_centrality
 
 def compute_shortest_path(df_connectivity_matrix):
