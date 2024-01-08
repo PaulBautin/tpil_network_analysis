@@ -126,5 +126,5 @@ def compute_small_world(df_connectivity_matrix):
 def modularity_louvain(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     A, B = bct.modularity_louvain_und(np_connectivity_matrix)
-    # df_centrality = pd.DataFrame(centrality, columns=['centrality'])
+    df_centrality = pd.DataFrame(A, index=df_connectivity_matrix.index)
     return A, B

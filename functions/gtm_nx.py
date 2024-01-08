@@ -98,7 +98,7 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
     node_color = df_weighted_nodes
     node_color = (node_color.sort_index())
     print(node_color)
-    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=node_color_values, cmap=colormap, vmin=vmin, vmax=vmax, with_labels=True)
+    nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=node_color_values, cmap=colormap, vmin=vmin, vmax=vmax, with_labels=False)
     #set colorbar
     plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=colormap))
     #cbar.set_label('Color Intensity')

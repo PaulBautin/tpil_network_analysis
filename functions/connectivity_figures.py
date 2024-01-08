@@ -54,7 +54,7 @@ def connectivity_matrix_viewer(conn_matrix):
     conn_matrix_reset = conn_matrix.reset_index()
     np_conn_matrix = np.dstack(
         list(conn_matrix_reset.groupby(['subject']).apply(lambda x: x.set_index(['subject', 'roi']).to_numpy())))
-    plt.imshow(np.log(np_conn_matrix[:,:,0]), cmap='RdYlBu')
+    plt.imshow(np_conn_matrix[:,:,0], cmap='viridis', vmin=0, vmax=4)
     plt.show()
 
 def plot_network(adj, coords):
@@ -325,7 +325,7 @@ def disruption_index_combined(df_metric_con, df_metric_clbp, df_degree_con):
     
     # Get unique subjects
     subjects = df_merged_reset['subject'].unique()
-    
+
     # Dataframe to store slope values (kD)
     df_kd = pd.DataFrame(columns=['subject', 'slope'])
     
@@ -333,9 +333,16 @@ def disruption_index_combined(df_metric_con, df_metric_clbp, df_degree_con):
     plt.figure(figsize=(10, 6))
 
     # Lists to store data for all subjects combined
-    combined_x_data = []
-    combined_y_data = []
-    
+    combined_x_data = df_merged_reset['centrality_x'].to_numpy()
+    combined_y_data = df_merged_reset['centrality_y'].to_numpy()
+
+    # Linear regression for all subjects combined
+    slope_combined, intercept_combined, _, _, _ = linregress(combined_x_data, combined_y_data)
+
+    # Plot the regression line for all subjects combined
+    regression_line_combined = intercept_combined + slope_combined * np.array(combined_x_data)
+    plt.plot(combined_x_data, regression_line_combined, label=f'Combined, y = {slope_combined:.2f}x + {intercept_combined:.2f}', linewidth=2, color='black')
+
     # Iterate over subjects
     for subject in subjects:
         # Extract data for the current subject
@@ -343,9 +350,9 @@ def disruption_index_combined(df_metric_con, df_metric_clbp, df_degree_con):
         x_data = subject_data['centrality_x'].to_numpy()
         y_data = subject_data['centrality_y'].to_numpy()
         
-        # Append data to combined lists
-        combined_x_data.extend(x_data)
-        combined_y_data.extend(y_data)
+        # # Append data to combined lists
+        # combined_x_data.extend(x_data)
+        # combined_y_data.extend(y_data)
 
         # Scatter plot
         plt.scatter(x_data, y_data, label=f'Subject {subject}')
@@ -360,18 +367,11 @@ def disruption_index_combined(df_metric_con, df_metric_clbp, df_degree_con):
         # Append subject and slope values to DataFrame
         df_kd = df_kd.append({'subject': subject, 'slope': slope, 'R²': r_value**2}, ignore_index=True)
     
-    # Linear regression for all subjects combined
-    slope_combined, intercept_combined, _, _, _ = linregress(combined_x_data, combined_y_data)
-    
-    # Plot the regression line for all subjects combined
-    regression_line_combined = intercept_combined + slope_combined * np.array(combined_x_data)
-    plt.plot(combined_x_data, regression_line_combined, label=f'Combined, y = {slope_combined:.2f}x + {intercept_combined:.2f}', linewidth=2, color='black')
-    
     # Annotate the plot with labels and legend
     plt.title('Disruption of Metric of Interest in Individual Subjects Compared to Control')
     plt.xlabel('X-axis')
     plt.ylabel('Y-axis')
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize='small')  # Adjust legend position and font size
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=5)  # Adjust legend position and font size
     
     # Show the plot
     plt.show()
