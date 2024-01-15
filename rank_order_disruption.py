@@ -31,7 +31,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 import glob
 import bct
-from functions.connectivity_processing import data_processor
+from functions.connectivity_processing import data_processor, multiply_matrix
 from functions.connectivity_read_files import find_files_with_common_name
 from functions.connectivity_figures import disruption_index, disruption_index_combined
 from functions.gtm_bct import bct_master
@@ -104,8 +104,8 @@ def main():
     Prepare data for analysis
     """
     # ### Select data and filters to apply
-    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
-    # df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
+    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
+    df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
     # df_clean_clbp_v2 = data_processor(df_clbp_v2, session='v2', condition='clbp', filter='scilpy')
     # df_clean_con_v2 = data_processor(df_con_v2, session='v2', condition='con', filter='scilpy')
     # df_clean_clbp_v3 = data_processor(df_clbp_v3, session='v3', condition='clbp', filter='scilpy')
@@ -113,49 +113,59 @@ def main():
     # sub_007 = df_clean_clbp_v1.loc[('sub-pl007'), :]
     
 
-    metric_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/clbp/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    metric_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/control/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    metric_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/clbp/clbp_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    metric_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/control/con_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    metric_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/clbp/clbp_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
-    metric_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/control/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+    # metric_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/clbp/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
+    # metric_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/control/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
+    # metric_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/clbp/clbp_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
+    # metric_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/control/con_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
+    # metric_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/clbp/clbp_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+    # metric_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/control/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
 
-    centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
-    centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+    # centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
+    # centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
+    # centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
+    # centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
+    # centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+    # centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+
+    ### Use NBS network
+    nbs_matrix = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/23-08-21_v1_adj.npy')
+    # plot_network(nbs_matrix, load_brainnetome_centroids())
+    
+    binarized_matrix = np.where(nbs_matrix == 23, 1, 0)
+    
+    network_clbp_v1 = df_clean_clbp_v1.groupby(['subject']).apply(lambda x: multiply_matrix(x, binarized_matrix))
+    network_con_v1 = df_clean_con_v1.groupby(['subject']).apply(lambda x: multiply_matrix(x, binarized_matrix))
+    print(network_clbp_v1)
 
     """
     Compute degree centrality (x)
-    # """
-    # centrality_con_v1 = df_clean_con_v1.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
+    """
+    centrality_con_v1 = network_con_v1.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
     # centrality_con_v2 = df_clean_con_v2.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
     # centrality_con_v3 = df_clean_con_v3.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
     
     """
     Compute metric of interest (y)
     """
-    # metric_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
+    metric_clbp_v1 = network_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
     # metric_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
     # metric_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
-    # metric_con_v1 = df_clean_con_v1.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
+    metric_con_v1 = network_con_v1.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
     # metric_con_v2 = df_clean_con_v2.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
     # metric_con_v3 = df_clean_con_v3.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
     # metric_clbp_v1 = bct_master(sub_007, 'strength_centrality')
     
     kd1 = disruption_index_combined(metric_con_v1, metric_clbp_v1, centrality_con_v1)
-    kd2 = disruption_index_combined(metric_con_v2, metric_clbp_v2, centrality_con_v2)
-    kd3 = disruption_index_combined(metric_con_v3, metric_clbp_v3, centrality_con_v3)
+    # kd2 = disruption_index_combined(metric_con_v2, metric_clbp_v2, centrality_con_v2)
+    # kd3 = disruption_index_combined(metric_con_v3, metric_clbp_v3, centrality_con_v3)
 
     # kd1 = disruption_index(centrality_con_v1, centrality_clbp_v1)
     # kd2 = disruption_index(centrality_con_v2, centrality_clbp_v2)
     # kd3 = disruption_index(centrality_con_v3, centrality_clbp_v3)
 
-    kd1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/afd/strength_afd_deg_v1.csv')
-    kd2.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/afd/strength_afd_deg_v2.csv')
-    kd3.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/afd/strength_afd_deg_v3.csv')
+    kd1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/afd/nbs_netowrk_strength_afd_deg_v1.csv')
+    # kd2.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/afd/strength_afd_deg_v2.csv')
+    # kd3.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_kd/afd/strength_afd_deg_v3.csv')
 
 if __name__ == "__main__":
     main()

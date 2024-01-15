@@ -71,7 +71,8 @@ def compute_eigenvector(df_connectivity_matrix):
 
 def compute_cluster(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
-    centrality = bct.clustering_coef_wu(np_connectivity_matrix)
+    np_connectivity_matrix_nrm = bct.weight_conversion(np_connectivity_matrix, 'normalize')
+    centrality = bct.clustering_coef_wu(np_connectivity_matrix_nrm)
     df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
     return df_centrality
 
@@ -125,6 +126,6 @@ def compute_small_world(df_connectivity_matrix):
 
 def modularity_louvain(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
-    A, B = bct.modularity_louvain_und(np_connectivity_matrix)
+    A, B = bct.community_louvain(np_connectivity_matrix)
     df_centrality = pd.DataFrame(A, index=df_connectivity_matrix.index)
     return A, B

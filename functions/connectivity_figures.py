@@ -28,7 +28,7 @@ from netneurotools.utils import get_centroids
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import matplotlib.colors as colors
+import matplotlib.colors as mcolors
 import math
 import glob
 from functions.connectivity_read_files import find_files_with_common_name
@@ -82,7 +82,7 @@ def plot_network(adj, coords):
     print(edges[0].shape)
     edge_cmap = plt.get_cmap('RdYlBu')
     #norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
-    norm = matplotlib.colors.Normalize(vmin=-2, vmax=2)
+    norm = matplotlib.colors.Normalize(vmin=0, vmax=10)
     edge_val = edge_cmap(norm(adj[edges[0], edges[1]].flatten()))
     # Plot the edges
     for edge_i, edge_j, c in zip(edges[0], edges[1], edge_val):

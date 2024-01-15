@@ -78,7 +78,7 @@ def difference(df_con, df_clbp):
     
     return df_diff
 
-def nbs_data(df_con_v1, df_clbp_v1, save_path):
+def nbs_data(df_con_v1, df_clbp_v1, thr, save_path):
     """
     Performs Network-based statistics between clbp and control group and save the results in results_nbs
     Zalesky A, Fornito A, Bullmore ET (2010) Network-based statistic: Identifying differences in brain networks. NeuroImage.
@@ -99,9 +99,9 @@ def nbs_data(df_con_v1, df_clbp_v1, save_path):
     null : Kx1 np.ndarray. A vector of K sampled from the null distribution of maximal component size.
     """
     # transform to 3d numpy array (N, N, S) with N nodes and S subjects
-    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
-    np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.set_index(['subject','roi']).to_numpy())))
-    pval, adj, null = bct.nbs.nbs_bct(np_con_v1, np_clbp_v1, thresh=2.0, tail='both', paired=False, verbose=True)
+    np_con_v1 = np.dstack(list(df_con_v1.groupby(['subject']).apply(lambda x: x.to_numpy())))
+    np_clbp_v1 = np.dstack(list(df_clbp_v1.groupby(['subject']).apply(lambda x: x.to_numpy())))
+    pval, adj, null = bct.nbs.nbs_bct(np_con_v1, np_clbp_v1, thresh=thr, tail='both', paired=False, verbose=True)
     np.save(save_path + 'pval.npy', pval)
     np.save(save_path + 'adj.npy', adj)
     np.save(save_path + 'null.npy', null)

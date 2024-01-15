@@ -68,8 +68,8 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
         node_color = (node_color.sort_index())
         print(node_color)
         node_color_values = node_color['statistic']
-        vmin = 0
-        vmax = 6
+        vmin = 2
+        vmax = 8
     # read the labels from the .txt file
     with open('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all_atlas.txt', 'r') as labels_file:
         labels = [line.strip() for line in labels_file]
@@ -78,7 +78,7 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
     # convert DataFrame to a NumPy array
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     # create a colormap based on df_weighted_nodes
-    colormap = plt.cm.get_cmap('RdYlBu')
+    colormap = plt.cm.get_cmap('viridis')
     # create an empty graph using NetworkX
     G = nx.Graph()
     G.add_nodes_from(range(len(labels)))
@@ -97,10 +97,10 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
     # graph according to node position and color intensity
     node_color = df_weighted_nodes
     node_color = (node_color.sort_index())
-    print(node_color)
     nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=node_color_values, cmap=colormap, vmin=vmin, vmax=vmax, with_labels=False)
     #set colorbar
-    plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=colormap))
+    cbar = plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=colormap))
+    cbar.ax.tick_params(labelsize=12)
     #cbar.set_label('Color Intensity')
     plt.axis('equal')
     plt.show()

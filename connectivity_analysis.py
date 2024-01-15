@@ -108,30 +108,28 @@ def main():
     df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
     df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
     df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
-
     ### Fetch graph theory metrics data
-    # centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/cluster_coefficient/bct/clbp/clbp_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    # centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/cluster_coefficient/bct/control/con_v1_scilpy(v1).csv', index_col=['subject', 'roi'])
-    # centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/cluster_coefficient/bct/clbp/clbp_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    # centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/cluster_coefficient/bct/control/con_v2_scilpy(v2).csv', index_col=['subject', 'roi'])
-    # centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/cluster_coefficient/bct/clbp/clbp_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
-    # centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/cluster_coefficient/bct/control/con_v3_scilpy(v3).csv', index_col=['subject', 'roi'])
+    centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v1_scilpy(all).csv', index_col=['subject', 'roi'])
+    centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v1_scilpy(all).csv', index_col=['subject', 'roi'])
+    centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v2_scilpy(all).csv', index_col=['subject', 'roi'])
+    centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v2_scilpy(all).csv', index_col=['subject', 'roi'])
+    centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v3_scilpy(all).csv', index_col=['subject', 'roi'])
+    centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v3_scilpy(all).csv', index_col=['subject', 'roi'])
 
     """
     Prepare data for analysis
     """
     ### Select data and filters to apply
-    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
-    df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
-    df_clean_clbp_v2 = data_processor(df_clbp_v2, session='v2', condition='clbp', filter='scilpy')
-    df_clean_con_v2 = data_processor(df_con_v2, session='v2', condition='con', filter='scilpy')
-    df_clean_clbp_v3 = data_processor(df_clbp_v3, session='v3', condition='clbp', filter='scilpy')
-    df_clean_con_v3 = data_processor(df_con_v3, session='v3', condition='con', filter='scilpy')
+    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
+    # df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
+    # df_clean_clbp_v2 = data_processor(df_clbp_v2, session='v2', condition='clbp', filter='scilpy')
+    # df_clean_con_v2 = data_processor(df_con_v2, session='v2', condition='con', filter='scilpy')
+    # df_clean_clbp_v3 = data_processor(df_clbp_v3, session='v3', condition='clbp', filter='scilpy')
+    # df_clean_con_v3 = data_processor(df_con_v3, session='v3', condition='con', filter='scilpy')
 
     ### Work on a single subject. For testing purposes
-    sub_007 = df_clean_clbp_v1.loc[('sub-pl007', 'sub-pl007'), :]
-    # print(sub_007)
-    
+    # sub_007_clean = df_clean_clbp_v1.loc[('sub-pl007', 'sub-pl007'), :]
+
     """
     Calculate chosen graph theory metric for all subjects in the DataFrame
     """
@@ -185,7 +183,8 @@ def main():
     """
     ### Calculate ICC
     # results_my_icc = my_icc(centrality_clbp_v1, centrality_clbp_v2, centrality_clbp_v3)
-    # results_icc = icc(centrality_clbp_v1, centrality_clbp_v2, centrality_clbp_v3)
+    results_icc = icc(centrality_clbp_v1, centrality_clbp_v2, centrality_clbp_v3)
+    results_icc = icc(centrality_con_v1, centrality_con_v2, centrality_con_v3)
 
     """
     Graph nodes of chosen network
@@ -194,6 +193,7 @@ def main():
     # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
     # df_mean_filter = mean_matrix(mask_clbp_commit2_v1)
     # networkx_graph_convertor(df_mean_filter, stat_clbp, 'friedman')
+    # networkx_graph_convertor(df_mean_filter, stat_con, 'friedman')
     # networkx_graph_convertor(df_mean_filter, z_score_v1, 'zscore')
     # networkx_graph_convertor(df_mean_filter, z_score_v2, 'zscore')
     # networkx_graph_convertor(df_mean_filter, z_score_v3, 'zscore')
@@ -218,13 +218,17 @@ def main():
     """
     To do NBS analysis of clbp and con Commit2_weights.csv and store results in NBS_results
     """    
-    # pval, adj, null = nbs_data(df_con_v1, df_clbp_v1, save_path='/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/23-07-11_v1_')
-    # adj_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/23-07-11_v1_adj.npy')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/adj_array.txt', adj_array, fmt='%1.3f')
-    # null_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/23-07-11_v1_null.npy')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/null_array.txt', null_array, fmt='%1.3f')
-    # pval_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/23-07-11_v1_pval.npy')
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/male/pval_array.txt', pval_array, fmt='%1.3f')
+    # pval, adj, null = nbs_data(df_clean_con_v1, df_clean_clbp_v1, 2.0, save_path='/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/afd/23-08-21_v1_')
+    # adj_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/afd/23-08-21_v1_adj.npy')
+    # null_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/afd/23-08-21_v1_null.npy')
+    # pval_array = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/afd/23-08-21_v1_pval.npy')
+
+    # DF = pd.DataFrame(adj_array)
+    # DF.to_csv("/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/afd/filtered_afd_v1_thr20.csv")
+
+    # nbs_matrix = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/results_nbs/afd/23-08-21_v1_adj.npy')
+    # plot_network(nbs_matrix, load_brainnetome_centroids())
+
 
 if __name__ == "__main__":
     main()
