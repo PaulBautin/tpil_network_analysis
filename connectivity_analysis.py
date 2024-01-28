@@ -37,11 +37,11 @@ from scipy.stats import ttest_rel, ttest_ind
 from scipy.stats import t
 from statsmodels.stats.anova import AnovaRM
 from functions.connectivity_figures import plot_network, circle_graph, histogram, connectivity_matrix_viewer
-from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter
+from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter, pain_duration_filter
 from functions.connectivity_processing import data_processor, prepare_data
 from functions.connectivity_read_files import find_files_with_common_name
-from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_global_efficiency, compute_small_world, compute_shortest_path, modularity_louvain, bct_master
-from functions.connectivity_stats import mean_matrix, z_score, friedman, nbs_data, my_icc, icc
+from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_efficiency, compute_small_world, compute_shortest_path, modularity_louvain, bct_master
+from functions.connectivity_stats import mean_matrix, z_score, friedman, nbs_data, my_icc, icc, calculate_icc_all_rois, calculate_cv
 from functions.gtm_nx import networkx_graph_convertor
 
 
@@ -109,41 +109,96 @@ def main():
     df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
     df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
     ### Fetch graph theory metrics data
-    centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v1_scilpy(all).csv', index_col=['subject', 'roi'])
-    centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v1_scilpy(all).csv', index_col=['subject', 'roi'])
-    centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v2_scilpy(all).csv', index_col=['subject', 'roi'])
-    centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v2_scilpy(all).csv', index_col=['subject', 'roi'])
-    centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v3_scilpy(all).csv', index_col=['subject', 'roi'])
-    centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v3_scilpy(all).csv', index_col=['subject', 'roi'])
+    # centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v1_scilpy(all).csv', index_col=['subject', 'roi'])
+    # centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v1_scilpy(all).csv', index_col=['subject', 'roi'])
+    # centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v2_scilpy(all).csv', index_col=['subject', 'roi'])
+    # centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v2_scilpy(all).csv', index_col=['subject', 'roi'])
+    # centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v3_scilpy(all).csv', index_col=['subject', 'roi'])
+    # centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v3_scilpy(all).csv', index_col=['subject', 'roi'])
 
     """
     Prepare data for analysis
     """
     ### Select data and filters to apply
-    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='v1', condition='clbp', filter='scilpy')
-    # df_clean_con_v1 = data_processor(df_con_v1, session='v1', condition='con', filter='scilpy')
-    # df_clean_clbp_v2 = data_processor(df_clbp_v2, session='v2', condition='clbp', filter='scilpy')
-    # df_clean_con_v2 = data_processor(df_con_v2, session='v2', condition='con', filter='scilpy')
-    # df_clean_clbp_v3 = data_processor(df_clbp_v3, session='v3', condition='clbp', filter='scilpy')
-    # df_clean_con_v3 = data_processor(df_con_v3, session='v3', condition='con', filter='scilpy')
-
+    df_clean_clbp_v1 = data_processor(df_clbp_v1, session='all', condition='clbp', filter='scilpy', clean=True)
+    # df_clean_con_v1 = data_processor(df_con_v1, session='all', condition='con', filter='scilpy', clean=True)
+    df_clean_clbp_v2 = data_processor(df_clbp_v2, session='all', condition='clbp', filter='scilpy', clean=True)
+    # df_clean_con_v2 = data_processor(df_con_v2, session='all', condition='con', filter='scilpy', clean=True)
+    df_clean_clbp_v3 = data_processor(df_clbp_v3, session='all', condition='clbp', filter='scilpy', clean=True)
+    # df_clean_con_v3 = data_processor(df_con_v3, session='all', condition='con', filter='scilpy', clean=True)
+    
+    df_2_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:pain_duration_filter(x, category='4'))
+    df_2_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:pain_duration_filter(x, category='4'))
+    df_2_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:pain_duration_filter(x, category='4'))
+    
     ### Work on a single subject. For testing purposes
-    # sub_007_clean = df_clean_clbp_v1.loc[('sub-pl007', 'sub-pl007'), :]
+    # sub_007_clean = df_clean_clbp_v1.loc['sub-pl007', :]
+    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/sub_007_clean.txt', sub_007_clean.to_numpy().flatten())
 
     """
     Calculate chosen graph theory metric for all subjects in the DataFrame
     """
     # modularity = bct_master(sub_007, 'modularity')
     # print(modularity)
-    # small_world = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'small_world'))
-    # ### Choose to store results
+    efficiency_v1 = df_2_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'efficiency', method='global'))
+    efficiency_v2 = df_2_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'efficiency', method='global'))
+    efficiency_v3 = df_2_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'efficiency', method='global'))
+    
+    ### Choose to store results
     # small_world.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/small_world/bct/clbp/clbp_v1_scilpy(v1).csv') # Warning! Need to hard-code this!
-    # strength_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
-    # strength_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
-    # strength_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
-    # strength_con_v1 = df_clean_con_v1.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
-    # strength_con_v2 = df_clean_con_v2.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
-    # strength_con_v3 = df_clean_con_v3.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
+    
+    # degree_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
+    # degree_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
+    # degree_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'degree_centrality'))
+    # degree_clbp_v1.insert(0, "visit", 1, True)
+    # degree_clbp_v2.insert(0, "visit", 2, True)
+    # degree_clbp_v3.insert(0, "visit", 3, True)
+    # df_degree = pd.concat([degree_clbp_v1, degree_clbp_v2, degree_clbp_v3])
+    
+    # strength_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    # strength_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    # strength_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'strength_centrality'))
+    
+    # strength_clbp_v1.insert(0, "visit", 1, True)
+    # strength_clbp_v2.insert(0, "visit", 2, True)
+    # strength_clbp_v3.insert(0, "visit", 3, True)
+    # df_strength = pd.concat([strength_clbp_v1, strength_clbp_v2, strength_clbp_v3])
+
+    # betweenness_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
+    # betweenness_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
+    # betweenness_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'betweenness_centrality'))
+    # betweenness_clbp_v1.insert(0, "visit", 1, True)
+    # betweenness_clbp_v2.insert(0, "visit", 2, True)
+    # betweenness_clbp_v3.insert(0, "visit", 3, True)
+    # df_betweenness = pd.concat([betweenness_clbp_v1, betweenness_clbp_v2, betweenness_clbp_v3])
+
+    # cluster_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'cluster_coefficient'))
+    # cluster_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'cluster_coefficient'))
+    # cluster_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'cluster_coefficient'))
+    # cluster_clbp_v1.insert(0, "visit", 1, True)
+    # cluster_clbp_v2.insert(0, "visit", 2, True)
+    # cluster_clbp_v3.insert(0, "visit", 3, True)
+    # df_cluster = pd.concat([cluster_clbp_v1, cluster_clbp_v2, cluster_clbp_v3])
+
+    # efficiency_clbp_v1 = df_clean_clbp_v1.groupby('subject').apply(lambda x:bct_master(x, 'efficiency', method='local'))
+    # efficiency_clbp_v2 = df_clean_clbp_v2.groupby('subject').apply(lambda x:bct_master(x, 'efficiency', method='local'))
+    # efficiency_clbp_v3 = df_clean_clbp_v3.groupby('subject').apply(lambda x:bct_master(x, 'efficiency', method='local'))
+    # efficiency_clbp_v1.insert(0, "visit", 1, True)
+    # efficiency_clbp_v2.insert(0, "visit", 2, True)
+    # efficiency_clbp_v3.insert(0, "visit", 3, True)
+    # df_efficiency = pd.concat([efficiency_clbp_v1, efficiency_clbp_v2, efficiency_clbp_v3])
+
+    # strength_col = df_strength['strength']
+    # betweenness_col = df_betweenness['betweenness']
+    # cluster_col = df_cluster['cluster']
+    # efficiency_col = df_efficiency['efficiency']
+    
+    # df_degree['strength'] = strength_col
+    # df_degree['betweenness'] = betweenness_col
+    # df_degree['cluster'] = cluster_col
+    # df_degree['efficiency'] = efficiency_col
+    # print(df_degree)
+    # df_degree.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/gtm_metrics.csv')
 
     # strength_clbp_v1.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v1_scilpy(v1).csv')
     # strength_clbp_v2.to_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v2_scilpy(v2).csv')
@@ -182,9 +237,16 @@ def main():
     Calculate the ICC of chosen metric
     """
     ### Calculate ICC
-    # results_my_icc = my_icc(centrality_clbp_v1, centrality_clbp_v2, centrality_clbp_v3)
-    results_icc = icc(centrality_clbp_v1, centrality_clbp_v2, centrality_clbp_v3)
-    results_icc = icc(centrality_con_v1, centrality_con_v2, centrality_con_v3)
+    # results_my_icc = my_icc(small_world_v1, small_world_v2, small_world_v3)
+    results_icc, df_concat = icc(efficiency_v1, efficiency_v2, efficiency_v3)
+    within, between = calculate_cv(df_concat)
+    print(within)
+    print(between)
+
+
+    # df_metric = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/gtm_metrics.csv')
+    # results_icc_roi = calculate_icc_all_rois(df_metric, metric='strength')
+    # results_icc_all = calculate_icc_all_metrics(df_metric)
 
     """
     Graph nodes of chosen network
@@ -201,8 +263,9 @@ def main():
     """
     Graph edges of chosen network
     """        
-    # figure_data = prepare_data(z_score_edges_v1)
     
+    # figure_z_score = prepare_data(z_score_edges_v1)
+    # figure_data = prepare_data(df_clean_clbp_v1)
     ### Graph adjacency matrix
     # connectivity_matrix_viewer(df_clean_clbp_v1)
 
@@ -213,8 +276,8 @@ def main():
     # circle_graph(figure_data)
 
     ### Graph network as a 3D brain
-    # plot_network(figure_data, load_brainnetome_centroids())
-
+    # plot_network(figure_z_score, load_brainnetome_centroids())
+    
     """
     To do NBS analysis of clbp and con Commit2_weights.csv and store results in NBS_results
     """    

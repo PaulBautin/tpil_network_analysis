@@ -31,7 +31,7 @@ def bct_master(df_connectivity_matrix, metric_name, **kwargs):
         'eigenvector_centrality': compute_eigenvector,
         'cluster_coefficient': compute_cluster,
         'shortest_path': compute_shortest_path,
-        'global_efficiency': compute_global_efficiency,
+        'efficiency': compute_efficiency,
         'small_world': compute_small_world,
         'modularity': modularity_louvain
     }
@@ -48,32 +48,36 @@ def bct_master(df_connectivity_matrix, metric_name, **kwargs):
 def compute_degree(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.degrees_und(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['metric'])
     return df_centrality
 
-def compute_strength(df_connectivity_matrix):
+def compute_strength(df_connectivity_matrix, method='local'):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.strengths_und(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
+    if method == 'global':
+        centrality = np.sum(centrality)
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['metric'])
     return df_centrality
 
 def compute_betweenness(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.betweenness_wei(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['metric'])
     return df_centrality
 
 def compute_eigenvector(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     centrality = bct.eigenvector_centrality_und(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['metric'])
     return df_centrality
 
-def compute_cluster(df_connectivity_matrix):
+def compute_cluster(df_connectivity_matrix, method='local'):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     np_connectivity_matrix_nrm = bct.weight_conversion(np_connectivity_matrix, 'normalize')
     centrality = bct.clustering_coef_wu(np_connectivity_matrix_nrm)
-    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['centrality'])
+    if method == 'global':
+            centrality = np.mean(centrality)
+    df_centrality = pd.DataFrame(centrality, index=df_connectivity_matrix.index, columns=['metric'])
     return df_centrality
 
 def compute_shortest_path(df_connectivity_matrix):
@@ -86,10 +90,15 @@ def compute_shortest_path(df_connectivity_matrix):
     avg_shortest_path = np.mean(valid_values)
     return avg_shortest_path
 
-def compute_global_efficiency(df_connectivity_matrix):
+def compute_efficiency(df_connectivity_matrix, method='global'):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
-    global_efficiency = bct.efficiency_wei(np_connectivity_matrix)
-    return global_efficiency
+    rescaled_array = (np_connectivity_matrix - np.min(np_connectivity_matrix)) / (np.max(np_connectivity_matrix) - np.min(np_connectivity_matrix))
+    if method == 'global':
+        efficiency = bct.efficiency_wei(rescaled_array, local=0)
+    elif method == 'local':
+        efficiency = bct.efficiency_wei(rescaled_array, local=2)
+    df_centrality = pd.DataFrame(efficiency, index=df_connectivity_matrix.index, columns=['metric'])
+    return df_centrality
 
 def random_matrix(df_connectivity_matrix):
     # convert DataFrame to a NumPy array

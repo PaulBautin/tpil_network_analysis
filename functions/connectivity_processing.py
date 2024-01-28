@@ -88,19 +88,22 @@ def data_processor(df_connectivity_matrix, session='v1', condition='clbp', sex=N
     
     # Apply requested filters
     if filter == 'scilpy' and session =='v1':
-        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1', print_density=True))
+        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'v1', print_density=False))
     elif filter == 'scilpy' and session =='v2':
-        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'v2', print_density=True))
+        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'v2', print_density=False))
     elif filter == 'scilpy' and session =='v3':
-        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'v3', print_density=True))
+        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'v3', print_density=False))
     elif filter == 'scilpy' and session =='all':
-        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'all', print_density=True))
+        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'all', print_density=False))
     elif filter == 'threshold':
         df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:threshold_filter(x))
     elif filter == 'distance_dependant':
         df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:distance_dependant_filter(x))
     else:
-        df_filtered = df_connectivity_matrix.set_index(["subject","roi"])
+        df_filtered = df_connectivity_matrix.set_index(["subject", "subject","roi"])
+
+    # Reset the index to remove the duplicated 'subject' level
+    df_filtered.index = df_filtered.index.droplevel(0)    
     
     # Apply requested sex
     if sex == "F" and condition =="clbp":

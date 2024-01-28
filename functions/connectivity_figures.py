@@ -50,11 +50,11 @@ def connectivity_matrix_viewer(conn_matrix):
     -------
     fig : :class:`matplotlib.figure.Figure`
     """
-    conn_matrix = conn_matrix.droplevel(1)
+    # conn_matrix = conn_matrix.droplevel(1)
     conn_matrix_reset = conn_matrix.reset_index()
     np_conn_matrix = np.dstack(
         list(conn_matrix_reset.groupby(['subject']).apply(lambda x: x.set_index(['subject', 'roi']).to_numpy())))
-    plt.imshow(np_conn_matrix[:,:,0], cmap='viridis', vmin=0, vmax=4)
+    plt.imshow(np_conn_matrix[:,:,0], cmap='RdYlBu', vmin=0, vmax=10)
     plt.show()
 
 def plot_network(adj, coords):
@@ -82,7 +82,7 @@ def plot_network(adj, coords):
     print(edges[0].shape)
     edge_cmap = plt.get_cmap('RdYlBu')
     #norm = matplotlib.colors.Normalize(vmin=np.min(adj[edges].flatten()), vmax=np.max(adj[edges].flatten()))
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=10)
+    norm = matplotlib.colors.Normalize(vmin=-4, vmax=4)
     edge_val = edge_cmap(norm(adj[edges[0], edges[1]].flatten()))
     # Plot the edges
     for edge_i, edge_j, c in zip(edges[0], edges[1], edge_val):

@@ -159,8 +159,8 @@ def scilpy_filter(df_connectivity_matrix, session, print_density=True):
     mask_v3_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v3_mask_len.npy')
     mask_v3_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_len.npy')
     
-    df_mult = df_connectivity_matrix.set_index(["subject","roi"]) # step necessary to apply z-score equation on every subject
-   
+    df_mult = df_connectivity_matrix.set_index(['subject', 'roi']) # step necessary to apply z-score equation on every subject
+
     valid_sessions = ['v1', 'v2', 'v3', 'all']
     if session not in valid_sessions:
         print("Invalid session. Valid sessions:", valid_sessions)
@@ -245,4 +245,46 @@ def sex_filter(df_connectivity_matrix, sex='F ', condition='clbp'):
     else:
         raise ValueError("Invalid combination of sex and condition")
 
+    return df_cleaned
+
+def pain_duration_filter(df_connectivity_matrix, category='2'):
+    """
+    Returns Data with only the desired patients for centrality measures. Used to measure the effect of pain duration on
+    results of different graph theory metrics for comparison across visits.
+
+    Parameters
+    ----------
+    df_connectivity_matrix : pandas DataFrame
+        The DataFrame containing the connectivity matrix.
+    category : str (default is '1')
+        Categories to filter by: '1' for 4-5 months, '2' for 6-12 months, '3' for 1-4 years and '4' for 5 years and more 
+
+    Returns
+    -------
+    df_connectivity_matrix : pandas DataFrame
+        The filtered DataFrame.
+    """
+    # Check if sex is valid
+    if category not in ('2', '3', '4'):
+        raise ValueError("Category must be '2', '3', '4'")
+    
+    subjects_2 = ['sub-pl031', 'sub-pl032', 'sub-pl034', 'sub-pl035', 'sub-pl056']
+    subjects_3 = ['sub-pl007', 'sub-pl010', 'sub-pl013', 'sub-pl027', 'sub-pl030', 'sub-pl039', 'sub-pl042', 'sub-pl049']
+    subjects_4 = ['sub-pl012', 'sub-pl014', 'sub-pl016', 'sub-pl017', 'sub-pl019', 'sub-pl036', 'sub-pl037', 'sub-pl038', 'sub-pl047', 'sub-pl050', 'sub-pl055', 'sub-pl063', 'sub-pl064']
+
+    # Set 'subject' as the index if it's not already
+    if 'subject' not in df_connectivity_matrix.index.names:
+        df_connectivity_matrix = df_connectivity_matrix.set_index('subject')
+    
+    elif category == '2':
+        df_cleaned = df_connectivity_matrix[df_connectivity_matrix.index.get_level_values('subject').isin(subjects_2)]
+    elif category == '3':
+        df_cleaned = df_connectivity_matrix[df_connectivity_matrix.index.get_level_values('subject').isin(subjects_3)]
+    elif category == '4':
+        df_cleaned = df_connectivity_matrix[df_connectivity_matrix.index.get_level_values('subject').isin(subjects_4)]
+    else:
+        raise ValueError("Invalid combination")
+
+    # Reset the index to remove the duplicated 'subject' level
+    df_cleaned.index = df_cleaned.index.droplevel(0) 
     return df_cleaned

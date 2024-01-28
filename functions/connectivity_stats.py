@@ -196,13 +196,59 @@ def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
     df_clean_centrality_v2.insert(1, "session", 2, True)
     df_clean_centrality_v3.insert(1, "session", 3, True)
     df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
+    print(df_concat)
     df_concat_reset = df_concat.reset_index()
-    icc = pg.intraclass_corr(data=df_concat_reset, targets='subject', raters='session', ratings='centrality')
+    print(df_concat_reset)
+    icc = pg.intraclass_corr(data=df_concat_reset, targets='subject', raters='session', ratings='metric')
     icc.set_index('Type')
     print("intraclass correlation coefficient:", icc)
     
     return icc
+
+
+def icc_global(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
+    """
+    Calculates intraclass correlation coefficient
+    of centrality metrics at different time points
+
+    Parameters
+    ----------
+    df_clean_centrality_v1 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clean_centrality_v2 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
+    df_clean_centrality_v3 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
+
+    Returns
+    -------
+    icc : list of all types of ICC with their description, value, F-value, degrees of freedom, p-value and CI95%
+    """
+    df_clean_centrality_v1.insert(1, "session", 1, True)
+    df_clean_centrality_v2.insert(1, "session", 2, True)
+    df_clean_centrality_v3.insert(1, "session", 3, True)
+    df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
+    df_concat_reset = df_concat.reset_index()
+    icc = pg.intraclass_corr(data=df_concat_reset, targets='subject', raters='session', ratings='metric')
+    icc.set_index('Type')
+    print("intraclass correlation coefficient:", icc)
     
+    return icc, df_concat
+
+def calculate_cv(dataframe):
+    # Calculate mean and standard deviation within each subject and session
+    mean_values_within_subject = dataframe.groupby(['subject'])['metric'].mean()
+    std_values_within_subject = dataframe.groupby(['subject'])['metric'].std()
+    print(mean_values_within_subject)
+    # Calculate coefficient of variability within each subject and session
+    cv_within_subject_session = (std_values_within_subject / mean_values_within_subject) * 100
+
+    # Calculate mean and standard deviation across all subjects and sessions
+    mean_values_between_subject = dataframe.groupby(['session'])['metric'].mean()
+    std_values_between_subject = dataframe.groupby(['session'])['metric'].std()
+    print(mean_values_between_subject)
+    # Calculate coefficient of variability across all subjects and sessions
+    cv_between_subject = (std_values_between_subject / mean_values_between_subject) * 100
+
+    return cv_within_subject_session, cv_between_subject
+
 def my_icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
     """
     Calculates intraclass correlation coefficient
@@ -220,18 +266,48 @@ def my_icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v
     """
     # Specify session in DataFrame
     df_clean_centrality_v1.insert(1, "session", 1, True)
+    n1 = len(df_clean_centrality_v1['metric'])
     df_clean_centrality_v2.insert(1, "session", 2, True)
+    n2 = len(df_clean_centrality_v2['metric'])
     df_clean_centrality_v3.insert(1, "session", 3, True)
+    n3 = len(df_clean_centrality_v3['metric'])
+    
+    
     # Merge DataFrames togetther and reorder index
     df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
-    
+
+    # # Calculate each sum of squared differences for every session
+    # ssd1 = ((df_clean_centrality_v1['metric'] - df_clean_centrality_v1['metric'].mean())**2).sum()
+    # ssd2 = ((df_clean_centrality_v2['metric'] - df_clean_centrality_v2['metric'].mean())**2).sum()
+    # ssd3 = ((df_clean_centrality_v3['metric'] - df_clean_centrality_v3['metric'].mean())**2).sum()
+    # ssd_list = [ssd1, ssd2, ssd3]
+    # print(ssd1)
+    # # Calculate sum of squares within the groups
+    # ssdw = sum(ssd_list)
+    # print(ssdw)
+    # # Calulate the sum of squares between the groups
+    # ssdb1 = n1*(df_clean_centrality_v1['metric'].mean() - df_concat['metric'].mean())**2
+    # ssdb2 = n2*(df_clean_centrality_v2['metric'].mean() - df_concat['metric'].mean())**2
+    # ssdb3 = n3*(df_clean_centrality_v3['metric'].mean() - df_concat['metric'].mean())**2
+    # ssdb_list = [ssdb1, ssdb2, ssdb3]
+    # print(ssdb1)
+    # ssdb = sum(ssdb_list)
+    # print(ssdb)
+    # # Calculate mean square within the groups
+    # msw = ssdw / (n1 - 3)
+    # # Calculate the mean square between the groups
+    # msb = ssdb / (3 - 1)
+
+    # # Calculate the icc
+    # icc = (msb - msw) / (msb + (3-1) * msw)
+
     # Within-subject Variance: variance of time points for each subject in each region
-    within_sub_var = df_concat.groupby(['subject', 'roi'])['centrality'].var()
+    within_sub_var = df_concat.groupby(['subject', 'roi'])['metric'].var()
     print("Variability accross session for every roi in every subject", within_sub_var)
     within_sub_var_mean = within_sub_var.mean()
     print("within-subject variance:", within_sub_var_mean)
     # Between-subject Variance: variance of subjects
-    between_sub_var = df_concat.groupby(['roi', 'session'])['centrality'].var()
+    between_sub_var = df_concat.groupby(['roi', 'session'])['metric'].var()
     print("Variability accross subjects for every session in every roi", between_sub_var)
     between_sub_var_mean = between_sub_var.mean()
     print("between-subject variance:", between_sub_var_mean)
@@ -241,3 +317,16 @@ def my_icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v
     print("intraclass correlation coefficient:", icc)
 
     return icc
+
+def calculate_icc_all_rois(dataframe, metric):
+    # Filter the dataframe for the given metric
+    subset = dataframe.loc[:, ['subject', 'visit', metric]]
+
+    # Create a long format for the intraclass_corr function
+    long_format = subset.reset_index()
+    
+    # Calculate ICC
+    result = pg.intraclass_corr(data=long_format, targets='subject', raters='visit', ratings=metric, nan_policy='omit')
+
+    print(f"Intraclass correlation coefficient for {metric}:\n{result}")
+    return result
