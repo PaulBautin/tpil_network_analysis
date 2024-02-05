@@ -196,54 +196,28 @@ def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
     df_clean_centrality_v2.insert(1, "session", 2, True)
     df_clean_centrality_v3.insert(1, "session", 3, True)
     df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
-    print(df_concat)
+    within, between = calculate_cv(df_concat)
+    print(within)
+    print(between)
     df_concat_reset = df_concat.reset_index()
-    print(df_concat_reset)
     icc = pg.intraclass_corr(data=df_concat_reset, targets='subject', raters='session', ratings='metric')
     icc.set_index('Type')
     print("intraclass correlation coefficient:", icc)
     
     return icc
 
-
-def icc_global(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
-    """
-    Calculates intraclass correlation coefficient
-    of centrality metrics at different time points
-
-    Parameters
-    ----------
-    df_clean_centrality_v1 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
-    df_clean_centrality_v2 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
-    df_clean_centrality_v3 : (1, NxS) pandas DataFrame where N is the number of nodes and S is the number of subjects
-
-    Returns
-    -------
-    icc : list of all types of ICC with their description, value, F-value, degrees of freedom, p-value and CI95%
-    """
-    df_clean_centrality_v1.insert(1, "session", 1, True)
-    df_clean_centrality_v2.insert(1, "session", 2, True)
-    df_clean_centrality_v3.insert(1, "session", 3, True)
-    df_concat = pd.concat([df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3])
-    df_concat_reset = df_concat.reset_index()
-    icc = pg.intraclass_corr(data=df_concat_reset, targets='subject', raters='session', ratings='metric')
-    icc.set_index('Type')
-    print("intraclass correlation coefficient:", icc)
-    
-    return icc, df_concat
-
 def calculate_cv(dataframe):
     # Calculate mean and standard deviation within each subject and session
     mean_values_within_subject = dataframe.groupby(['subject'])['metric'].mean()
     std_values_within_subject = dataframe.groupby(['subject'])['metric'].std()
-    print(mean_values_within_subject)
+    
     # Calculate coefficient of variability within each subject and session
     cv_within_subject_session = (std_values_within_subject / mean_values_within_subject) * 100
 
     # Calculate mean and standard deviation across all subjects and sessions
     mean_values_between_subject = dataframe.groupby(['session'])['metric'].mean()
     std_values_between_subject = dataframe.groupby(['session'])['metric'].std()
-    print(mean_values_between_subject)
+    
     # Calculate coefficient of variability across all subjects and sessions
     cv_between_subject = (std_values_between_subject / mean_values_between_subject) * 100
 
