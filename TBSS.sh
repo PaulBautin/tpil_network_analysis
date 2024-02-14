@@ -1,15 +1,15 @@
 #!/bin/bash
 
 #select directory with TBSS files
-cd /mnt/d/Marc-Antoine/TBSS/v*
+# cd /mnt/d/Marc-Antoine/TBSS/v*
 
-tbss_1_preproc *.nii.gz
+# tbss_1_preproc *.nii.gz
 
-tbss_2_reg -T
+# tbss_2_reg -T
 
-tbss_3_postreg -S
+# tbss_3_postreg -S
 
-tbss_4_prestats 0.2
+# tbss_4_prestats 0.2
 
 ########################################################################
 
@@ -58,4 +58,26 @@ tbss_4_prestats 0.2
 #cluster -i tbss_tstat1.nii.gz -t 2.06 --minextent=4 --oindex=/mnt/d/Marc-Antoine/TBSS/cluster1_v1_size4.nii.gz
 #fslmaths cluster1_v1_size4.nii.gz -thr 2 -bin cluster1_v1_size4_bin.nii.gz
 #cd /mnt/d/Marc-Antoine/TBSS/cluster_mask/*
-#fslmaths cluster1_v1_size4_bin.nii.gz -mul cluster1_v2_size4_bin.nii.gz -mul cluster1_v3_size4.nii_bin.gz cluster1_intersection_size4.nii.gz
+#fslmaths cluster1_v1_size4_bin.nii.gz -mul cluster1_v2_size4_bin.nii.gz -mul cluster1_v3_size4_bin.nii.gz cluster1_intersection_size4.nii.gz
+
+cd /mnt/h/Marc-Antoine/TBSS/v1/stats
+cluster -i tbss_tstat1.nii.gz -t 2.5 --minextent=15 --oindex=/mnt/h/Marc-Antoine/TBSS/cluster1_v1_size15.nii.gz 
+fslmaths /mnt/h/Marc-Antoine/TBSS/cluster1_v1_size15.nii.gz -bin /mnt/h/Marc-Antoine/TBSS/cluster1_v1_size15_binary.nii.gz
+cluster -i tbss_tstat2.nii.gz -t 2.5 --minextent=15 --oindex=/mnt/h/Marc-Antoine/TBSS/cluster2_v1_size15.nii.gz 
+fslmaths /mnt/h/Marc-Antoine/TBSS/cluster2_v1_size15.nii.gz -bin /mnt/h/Marc-Antoine/TBSS/cluster2_v1_size15_binary.nii.gz
+
+cd /mnt/h/Marc-Antoine/TBSS/v2/stats
+cluster -i tbss_tstat1.nii.gz -t 2.5 --minextent=15 --oindex=/mnt/h/Marc-Antoine/TBSS/cluster1_v2_size15.nii.gz 
+fslmaths /mnt/h/Marc-Antoine/TBSS/cluster1_v2_size15.nii.gz -bin /mnt/h/Marc-Antoine/TBSS/cluster1_v2_size15_binary.nii.gz
+cluster -i tbss_tstat2.nii.gz -t 2.5 --minextent=15 --oindex=/mnt/h/Marc-Antoine/TBSS/cluster2_v2_size15.nii.gz 
+fslmaths /mnt/h/Marc-Antoine/TBSS/cluster2_v2_size15.nii.gz -bin /mnt/h/Marc-Antoine/TBSS/cluster2_v2_size15_binary.nii.gz
+
+cd /mnt/h/Marc-Antoine/TBSS/v3/stats
+cluster -i tbss_tstat1.nii.gz -t 2.5 --minextent=15 --oindex=/mnt/h/Marc-Antoine/TBSS/cluster1_v3_size15.nii.gz 
+fslmaths /mnt/h/Marc-Antoine/TBSS/cluster1_v3_size15.nii.gz -bin /mnt/h/Marc-Antoine/TBSS/cluster1_v3_size15_binary.nii.gz
+cluster -i tbss_tstat2.nii.gz -t 2.5 --minextent=15 --oindex=/mnt/h/Marc-Antoine/TBSS/cluster2_v3_size15.nii.gz 
+fslmaths /mnt/h/Marc-Antoine/TBSS/cluster2_v3_size15.nii.gz -bin /mnt/h/Marc-Antoine/TBSS/cluster2_v3_size15_binary.nii.gz
+
+cd /mnt/h/Marc-Antoine/TBSS/
+fslmaths cluster1_v1_size15_binary.nii.gz -mul cluster1_v2_size15_binary.nii.gz -mul cluster1_v3_size15_binary.nii.gz cluster1_intersection_size15.nii.gz
+fslmaths cluster2_v1_size15_binary.nii.gz -mul cluster2_v2_size15_binary.nii.gz -mul cluster2_v3_size15_binary.nii.gz cluster2_intersection_size15.nii.gz

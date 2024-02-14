@@ -4,7 +4,9 @@ from __future__ import division
 # -*- coding: utf-8
 #########################################################################################
 #
-# script pour l'analyse CCA des données démopsychologiques et des métriques de la matière blanche
+# script pour l'analyse CCA des données démopsychologiques et des métriques de la matière blanche.
+# L'analyse CCA cherche à expliquer la corrélation entre deux groupes de variables peu importe le
+# nombre de variables dans chaque groupe.
 #
 # example: python CCA_analysis.py -i <results>
 # ---------------------------------------------------------------------------------------
@@ -12,10 +14,6 @@ from __future__ import division
 #
 # Prerequis: environnement virtuel avec python, pandas, numpy, sklearn et matplotlib (env_tpil)
 #
-#########################################################################################
-
-
-# Parser
 #########################################################################################
 
 
@@ -35,9 +33,23 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 from sklearn.utils import shuffle
 import random
+from functions.connectivity_processing import difference_visits
 
 def run_shuffled_cca(ddata,vdata,n_cca_components,iter):
-    
+    """
+    a simple funtion which runs permutations of CCA (shuffled)
+    from https://github.com/CoBrALab/design-choices-cca-neuroimaging/blob/main/run_cca_function.py 
+    Parameters
+    ----------
+    ddata : (N, M) DataFrame
+    vdata : (P, Q) DataFrame
+    n_cca_components : integer, number of canonical variates pairs (usually minimum of metrics in a dataset)
+    iter : char, should be part of a loop to generate multiple random CCA
+
+    Returns
+    -------
+    testcorrs : np.array, Pearson's correlation for every shuffled CCA
+    """
     #Breaks links in dataset
     demographics_shuffled, vertexes_shuffled = shuffle(ddata, vdata, random_state=iter)
     
@@ -51,11 +63,22 @@ def run_shuffled_cca(ddata,vdata,n_cca_components,iter):
     return testcorrs
 
 def correlation_matrix(dataset_1, dataset_2):
+    """
+    a function to see the correlation between every variables 
+    Parameters
+    ----------
+    ddata : (N, M) DataFrame
+    vdata : (P, Q) DataFrame
+
+    Returns
+    -------
+    fig : :class:`matplotlib.figure.Figure`
+    """
     # Merge both Dataframes
     corr_data = pd.merge(dataset_1, dataset_2, how='inner', on=['subject', 'visit'])
     scaler = StandardScaler()
     corr_data = scaler.set_output(transform="pandas").fit_transform(corr_data)
-    print(corr_data)
+    
     # Preliminary correlations between features
     corr_coeff = corr_data.corr()
     plt.figure(figsize = (5, 5))
@@ -66,54 +89,84 @@ def main():
     """
     main function, gather stats and call plots
     """
-    # Import wm global metrics dataframe
-    gtm_metrics = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/gtm_global_metrics_con.csv')
-    gtm_metrics = gtm_metrics.set_index(['subject', 'visit'])
-    # Select only DLC patients and visit 1
-    gtm_metrics_clbp_v1 = gtm_metrics.loc[(slice(None), 3), :]
+    # Import wm global metrics dataframe for CTL
+    gtm_metrics_con = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/gtm_global_metrics_con.csv')
+    gtm_metrics_con = gtm_metrics_con.set_index(['subject', 'visit'])
+    # Select only CTL patients and visit 1
+    gtm_metrics_con_v1 = gtm_metrics_con.loc[(slice(None), 1), :]
+    # Select differences between visit 1 and 2 for CTL patients
+    metrics_con_diff32 = gtm_metrics_con.loc[(slice(None), 3), :] 
+    metrics_con_diff32 = metrics_con_diff32.drop(['efficiency', 'strength', 'cluster'], axis=1)
     
+    # Import wm global metrics dataframe for CLBP
+    gtm_metrics_clbp = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/gtm_global_metrics.csv')
+    gtm_metrics_clbp = gtm_metrics_clbp.set_index(['subject', 'visit'])
+    # Select only CLBP patients and visit 1
+    gtm_metrics_clbp_v1 = gtm_metrics_clbp.loc[(slice(None), 1), :]
+    # Select differences between visit 1 and 2 for CLBP patients
+    metrics_clbp_diff32 = gtm_metrics_clbp.loc[(slice(None), 3), :] 
+    metrics_clbp_diff32 = metrics_clbp_diff32.drop(['efficiency', 'strength', 'cluster'], axis=1)
+
     # Import demopsychologic results dataframe
     path_results = os.path.abspath("/mnt/c/Users/mafor/Downloads/socio_psycho_table.xlsx")
-    dp_results = pd.read_excel(path_results, sheet_name="Donnee",header=0, usecols=[0,1,2,3,4,5,6])
-    dp_results = dp_results.set_index(['subject', 'Groupe', 'visit'])
-    # Select only DLC patients and visit 1
-    dp_results_clbp_v1 = dp_results.loc[(dp_results.index.get_level_values('Groupe') == 0) & (dp_results.index.get_level_values('visit') == 3)]
+
+    # Select CTL patients
+    q_results_con = pd.read_excel(path_results, sheet_name="Donnee", header=0, usecols=[0,1,2,3,4,5,6])
+    q_results_con = q_results_con.set_index(['subject', 'Groupe', 'visit'])
+    # Select only CTL patients and visit 1
+    q_results_con_v1 = q_results_con.loc[(q_results_con.index.get_level_values('Groupe') == 0) & (q_results_con.index.get_level_values('visit') == 1)]
+    # Select differences between visit 1 and 2 for CTL patients
+    q_results_con_diff32 = pd.read_excel(path_results, sheet_name="Donnee", header=0, usecols=[0,1,2,3,17,18,19])
+    q_results_con_diff32 = q_results_con_diff32.set_index(['subject', 'Groupe', 'visit'])
+    # Select only CTL and visit 1
+    q_results_con_diff32 = q_results_con_diff32.loc[(q_results_con_diff32.index.get_level_values('Groupe') == 0) & (q_results_con_diff32.index.get_level_values('visit') == 3)]
+
+    # Select CLBP patients
+    q_results_clbp = pd.read_excel(path_results, sheet_name="Donnee", header=0, usecols=[0,1,2,3,4,5,6,7,8])
+    q_results_clbp = q_results_clbp.set_index(['subject', 'Groupe', 'visit'])
+    # Select only CLBP patients and visit 1
+    q_results_clbp_v1 = q_results_clbp.loc[(q_results_clbp.index.get_level_values('Groupe') == 1) & (q_results_clbp.index.get_level_values('visit') == 1)]
+    # Select differences between visit 1 and 2 for CLBP patients
+    q_results_clbp_diff32 = pd.read_excel(path_results, sheet_name="Donnee", header=0, usecols=[0,1,2,3,17,18,19,20,21])
+    q_results_clbp_diff32 = q_results_clbp_diff32.set_index(['subject', 'Groupe', 'visit'])
+    # Select only CLBP and visit 1
+    q_results_clbp_diff32 = q_results_clbp_diff32.loc[(q_results_clbp_diff32.index.get_level_values('Groupe') == 1) & (q_results_clbp_diff32.index.get_level_values('visit') == 3)]
     
     # # Show preliminary correlation matrix
-    # correlation_matrix(gtm_metrics_clbp_v1, dp_results_clbp_v1)
+    # correlation_matrix(metrics_con_diff32, q_results_con_diff32)
 
-    # Scale data
-    scaler = StandardScaler()
-    X1 = scaler.fit_transform(gtm_metrics_clbp_v1)
-    X2 = scaler.fit_transform(dp_results_clbp_v1)
+    # # Scale data
+    # scaler = StandardScaler()
+    # X1 = scaler.fit_transform(metrics_con_diff32)
+    # X2 = scaler.fit_transform(q_results_con_diff32)
     
-    # Choose number of canonical variates pairs (usually minimum of metrics in a dataset)
-    n_comp=3
+    # # Choose number of canonical variates pairs (usually minimum of metrics in a dataset)
+    # n_comp=3
 
-    # Test statistical significance of CCA by generating 1000 random CCAs
-    rand_corr = np.array([run_shuffled_cca(X1, X2, 3, i) for i in range(1000)])[:,0]
-    print(rand_corr)
-    # Define CCA
-    cca = CCA(scale=False, n_components=n_comp)
+    # # Test statistical significance of CCA by generating 1000 random CCAs
+    # rand_corr = np.array([run_shuffled_cca(X1, X2, 3, i) for i in range(1000)])[:,0]
     
-    # Transform datasets to obtain canonical variates
-    X1_c, X2_c = cca.fit_transform(X1, X2)
+    # # Define CCA
+    # cca = CCA(scale=False, n_components=n_comp)
     
-    # check if there is any dependency between canonical variates (correlate canonical variate pairs)
-    comp_corr = [np.corrcoef(X1_c[:, i], X2_c[:, i])[1][0] for i in range(n_comp)]
-    print(comp_corr)
-    plt.figure(figsize=(8, 6))
-    sns.boxplot(y=rand_corr, color='skyblue')
-    plt.axhline(y=np.corrcoef(X1_c[:, 0], X2_c[:, 0])[1][0], color='red', linestyle='--', label='Actual CCA correlation')
-    plt.title('Distribution of Random CCA Correlations')
-    plt.xlabel('Random CCA Correlations')
-    plt.ylabel('Correlation Coefficient')
-    plt.legend()
-    plt.show()
+    # # Transform datasets to obtain canonical variates
+    # X1_c, X2_c = cca.fit_transform(X1, X2)
+    
+    # # check if there is any dependency between canonical variates (correlate canonical variate pairs)
+    # comp_corr = [np.corrcoef(X1_c[:, i], X2_c[:, i])[1][0] for i in range(n_comp)]
+    # print(comp_corr)
+    # plt.figure(figsize=(8, 6))
+    # sns.boxplot(y=rand_corr, color='skyblue')
+    # plt.axhline(y=np.corrcoef(X1_c[:, 0], X2_c[:, 0])[1][0], color='red', linestyle='--', label='Actual CCA correlation')
+    # plt.title('Distribution of Random CCA Correlations')
+    # plt.xlabel('Random CCA Correlations')
+    # plt.ylabel('Correlation Coefficient')
+    # plt.legend()
+    # plt.show()
 
-    # Calculate percentage of random correlations lower than or equal to actual CCA correlation
-    percentage_higher = (np.sum(rand_corr <= np.corrcoef(X1_c[:, 0], X2_c[:, 0])[1][0]) / len(rand_corr)) * 100
-    print(f'The actual CCA correlation is higher than {percentage_higher:.2f}% of random correlations.')
+    # # Calculate percentage of random correlations lower than or equal to actual CCA correlation
+    # percentage_higher = (np.sum(rand_corr <= np.corrcoef(X1_c[:, 0], X2_c[:, 0])[1][0]) / len(rand_corr)) * 100
+    # print(f'The actual CCA correlation is higher than {percentage_higher:.2f}% of random correlations.')
     
     # plt.bar(['CC1', 'CC2', 'CC3'], comp_corr, color='lightgrey', width=0.8, edgecolor='k')
     # plt.xlabel('Canonical Variate Pairs')
@@ -130,13 +183,12 @@ def main():
     #     plt.ylabel(f'Canonical Variate {i+1} from X2')
     #     plt.show()
 
-    # Measure which variables influence the canonical variates the most for each dataset (use the loadings)
-    print(f'Canonical Loadings for White Matter Metrics: \n{cca.x_loadings_}') # get loadings for canonical variate of X1 dataset
-    print(f'Canonical Loadings for Questionnaire results: \n{cca.y_loadings_}') # get loadings for canonical variate of X2 dataset
+    # # Measure which variables influence the canonical variates the most for each dataset (use the loadings)
+    # print(f'Canonical Loadings for White Matter Metrics: \n{cca.x_loadings_}') # get loadings for canonical variate of X1 dataset
+    # print(f'Canonical Loadings for Questionnaire results: \n{cca.y_loadings_}') # get loadings for canonical variate of X2 dataset
     
-    
-    # coef_df = pd.DataFrame(np.round(cca.coef_, 3), columns = [gtm_metrics_clbp_v1.columns])
-    # coef_df.index = dp_results_clbp_v1.columns
+    # coef_df = pd.DataFrame(np.round(cca.coef_, 3), columns = [metrics_con_diff32.columns])
+    # coef_df.index = q_results_con_diff32.columns
     # plt.figure(figsize = (5, 5))
     # sns.heatmap(coef_df, cmap='coolwarm', annot=True, linewidths=1, vmin=-1)
     # plt.show()

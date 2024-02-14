@@ -96,7 +96,7 @@ def data_processor(df_connectivity_matrix, session='v1', condition='clbp', sex=N
     elif filter == 'scilpy' and session =='all':
         df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:scilpy_filter(x, 'all', print_density=False))
     elif filter == 'threshold':
-        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:threshold_filter(x))
+        df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:threshold_filter(x, print_density=False))
     elif filter == 'distance_dependant':
         df_filtered = df_connectivity_matrix.groupby('subject').apply(lambda x:distance_dependant_filter(x))
     else:
@@ -130,3 +130,20 @@ def data_processor(df_connectivity_matrix, session='v1', condition='clbp', sex=N
 def multiply_matrix(matrix_1, matrix_2):
     df_mult = matrix_1 * matrix_2
     return df_mult
+
+def difference_visits(df):
+    """
+    A script used to calculate differences between visits
+    """
+    # Calculate the differences between visits
+    df['efficiency_diff'] = df.groupby('subject')['efficiency'].diff(periods=1)
+
+    df['strength_diff'] = df.groupby('subject')['strength'].diff(periods=1)
+
+    df['cluster_diff'] = df.groupby('subject')['cluster'].diff(periods=1)
+
+    df['small_world_diff'] = df.groupby('subject')['small_world'].diff(periods=1)
+
+    df['modularity_diff'] = df.groupby('subject')['modularity'].diff(periods=1)
+
+    return df

@@ -67,7 +67,7 @@ def distance_dependant_filter(df_connectivity_matrix):
     return consensus_conn
 
 
-def threshold_matrix(df_connectivity_matrix):
+def threshold_matrix(df_connectivity_matrix, **kwargs):
     """
     Uses a minimum spanning tree to ensure that no nodes are disconnected from the resulting thresholded graph.
     Keeps top 10% of connections
@@ -85,14 +85,16 @@ def threshold_matrix(df_connectivity_matrix):
     bn_centroids = load_brainnetome_centroids()
     eu_distance = squareform(pdist(bn_centroids, metric="euclidean"))
     threshold_conn = threshold_network(np.mean(np_con_v1,axis=2), retain=10)
-    print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
-    print("average_distance_with_filter: {}".format(np.mean(eu_distance * threshold_conn, where=(threshold_conn != 0))))
+    print_density = kwargs.get('print_density', False)
+    if print_density:
+        print("\naverage_distance_without_filter: {}".format(np.mean(eu_distance, where=(eu_distance != 0))))
+        print("average_distance_with_filter: {}".format(np.mean(eu_distance * threshold_conn, where=(threshold_conn != 0))))
 
     return threshold_conn
 
-def threshold_filter(df_connectivity_matrix):
+def threshold_filter(df_connectivity_matrix, print_density=True):
 
-    np_threshold = threshold_matrix(df_connectivity_matrix)
+    np_threshold = threshold_matrix(df_connectivity_matrix, print_density=print_density)
     df_mult = df_connectivity_matrix.set_index(["subject","roi"])
 
     mask_data = df_mult * np_threshold
@@ -102,14 +104,16 @@ def threshold_filter(df_connectivity_matrix):
     total_possible_connections = (np_connectivity_matrix.shape[0] * (np_connectivity_matrix.shape[0] - 1)) / 2 
     actual_connections = np.count_nonzero(np.triu(np_connectivity_matrix))
     link_density = actual_connections / total_possible_connections * 100
-    print(f"Link Density before filter: {link_density}%")
+    
 
     # Calculate link density of matrix after filtering
     np_mask_data = mask_data.to_numpy()
     actual_connections_filtered = np.count_nonzero(np.triu(np_mask_data))
     link_density_filtered = actual_connections_filtered / total_possible_connections * 100
-    print(f"Link Density after filter: {link_density_filtered}%")
-
+    if print_density:
+        print(f"Link Density before filter: {link_density}%")
+        print(f"Link Density after filter: {link_density_filtered}%")
+    
     return mask_data
 
 #def filter_no_connections(df_connectivity_matrix):

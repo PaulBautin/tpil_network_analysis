@@ -130,11 +130,11 @@ def compute_small_world(df_connectivity_matrix):
     avg_cluster_coeff_rand = np.mean(cluster_coeff_rand)
     shortest_path_rand = compute_shortest_path(df_rand_connectivity_matrix)
     sigma = (avg_cluster_coeff / avg_cluster_coeff_rand) / (shortest_path / shortest_path_rand)
-    df_sigma = pd.DataFrame(sigma, index=df_connectivity_matrix.index, columns=['metric'])
+    df_sigma = pd.DataFrame(sigma, columns=['metric'])
     return df_sigma
 
 def modularity_louvain(df_connectivity_matrix):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     A, B = bct.community_louvain(np_connectivity_matrix)
-    df_centrality = pd.DataFrame(A, index=df_connectivity_matrix.index)
-    return A, B
+    df_centrality = pd.DataFrame({'metric': [B]})
+    return df_centrality
