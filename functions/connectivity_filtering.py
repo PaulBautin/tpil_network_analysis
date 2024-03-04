@@ -150,18 +150,31 @@ def scilpy_filter(df_connectivity_matrix, session, print_density=True):
     -------
     mask_data : (N, N) filtered conenctivity matrix, pandas DataFrame
     """
-    mask_v1_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v1_mask_sc.npy')
-    mask_v1_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_sc.npy')
-    mask_v1_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v1_mask_len.npy')
-    mask_v1_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_len.npy')
-    mask_v2_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v2_mask_sc.npy')
-    mask_v2_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_sc.npy')
-    mask_v2_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v2_mask_len.npy')
-    mask_v2_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_len.npy')
-    mask_v3_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v3_mask_sc.npy')
-    mask_v3_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_sc.npy')
-    mask_v3_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v3_mask_len.npy')
-    mask_v3_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_len.npy')
+    # mask_v1_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v1_mask_sc.npy')
+    # mask_v1_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_sc.npy')
+    # mask_v1_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v1_mask_len.npy')
+    # mask_v1_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_len.npy')
+    # mask_v2_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v2_mask_sc.npy')
+    # mask_v2_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_sc.npy')
+    # mask_v2_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v2_mask_len.npy')
+    # mask_v2_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_len.npy')
+    # mask_v3_con_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v3_mask_sc.npy')
+    # mask_v3_clbp_sc = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_sc.npy')
+    # mask_v3_con_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/con_v3_mask_len.npy')
+    # mask_v3_clbp_len = np.load('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_len.npy')
+
+    mask_v1_con_sc = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/con_v1_mask_sc.npy')
+    mask_v1_clbp_sc = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_sc.npy')
+    mask_v1_con_len = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/con_v1_mask_len.npy')
+    mask_v1_clbp_len = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/clbp_v1_mask_len.npy')
+    mask_v2_con_sc = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/con_v2_mask_sc.npy')
+    mask_v2_clbp_sc = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_sc.npy')
+    mask_v2_con_len = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/con_v2_mask_len.npy')
+    mask_v2_clbp_len = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/clbp_v2_mask_len.npy')
+    mask_v3_con_sc = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/con_v3_mask_sc.npy')
+    mask_v3_clbp_sc = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_sc.npy')
+    mask_v3_con_len = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/con_v3_mask_len.npy')
+    mask_v3_clbp_len = np.load('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/scilpy_filters/clbp_v3_mask_len.npy')
     
     df_mult = df_connectivity_matrix.set_index(['subject', 'roi']) # step necessary to apply z-score equation on every subject
 
@@ -292,3 +305,12 @@ def pain_duration_filter(df_connectivity_matrix, category='2'):
     # Reset the index to remove the duplicated 'subject' level
     df_cleaned.index = df_cleaned.index.droplevel(0) 
     return df_cleaned
+
+def limbic_system_filter(df_connectivity_matrix):
+    df_filtered = df_connectivity_matrix.loc[df_connectivity_matrix.index.get_level_values('roi').isin([175,176,177,178,179,180,181,182,183,184,185,186,187,188,211,216,217,218,219,223,224,225])]
+    df_filtered.index.names = ['subject','label']
+    df_filtered.rename(index={175: 'CG_L_7_1',176: 'CG_R_7_1',177: 'CG_L_7_2',178: 'CG_R_7_2',179: 'CG_L_7_3',180: 'CG_R_7_3',181: 'CG_L_7_4',182: 'CG_R_7_4',
+                              183: 'CG_L_7_5',184: 'CG_R_7_5',185: 'CG_L_7_6',186: 'CG_R_7_6',187: 'CG_L_7_7',188: 'CG_R_7_7',211: 'Tha_L',216: 'Hipp_L',
+                              217: 'Amyg_L',218: 'Accum_L',219: 'Tha_R',223: 'Hipp_R',224: 'Amyg_R',225: 'Accum_R'},
+                              level='label', inplace=True)
+    return df_filtered

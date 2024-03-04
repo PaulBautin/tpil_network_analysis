@@ -94,9 +94,9 @@ def compute_efficiency(df_connectivity_matrix, method='global'):
     np_connectivity_matrix = df_connectivity_matrix.to_numpy()
     rescaled_array = (np_connectivity_matrix - np.min(np_connectivity_matrix)) / (np.max(np_connectivity_matrix) - np.min(np_connectivity_matrix))
     if method == 'global':
-        efficiency = bct.efficiency_wei(rescaled_array, local=0)
+        efficiency = bct.efficiency_wei(rescaled_array, local='global')
     elif method == 'local':
-        efficiency = bct.efficiency_wei(rescaled_array, local=2)
+        efficiency = bct.efficiency_wei(rescaled_array, local='local')
     df_centrality = pd.DataFrame(efficiency, index=df_connectivity_matrix.index, columns=['metric'])
     return df_centrality
 

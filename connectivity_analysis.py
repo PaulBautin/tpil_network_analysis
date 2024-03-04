@@ -37,7 +37,7 @@ from scipy.stats import ttest_rel, ttest_ind
 from scipy.stats import t
 from statsmodels.stats.anova import AnovaRM
 from functions.connectivity_figures import plot_network, circle_graph, histogram, connectivity_matrix_viewer
-from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter, pain_duration_filter
+from functions.connectivity_filtering import distance_dependant_filter, load_brainnetome_centroids, scilpy_filter, threshold_filter, sex_filter, pain_duration_filter, limbic_system_filter
 from functions.connectivity_processing import data_processor, prepare_data
 from functions.connectivity_read_files import find_files_with_common_name
 from functions.gtm_bct import  compute_betweenness, compute_cluster, compute_degree, compute_eigenvector, compute_efficiency, compute_small_world, compute_shortest_path, modularity_louvain, bct_master
@@ -89,47 +89,32 @@ def main():
     """
     main function, gather stats and call plots
     """
-    ### Get parser elements
-    parser = get_parser()
-    arguments = parser.parse_args()
-    path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
-    path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
-    path_output = os.path.abspath(arguments.o)
+    # ### Get parser elements
+    # parser = get_parser()
+    # arguments = parser.parse_args()
+    # path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
+    # path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
+    # path_output = os.path.abspath(arguments.o)
     
     """ 
     Get connectivity data
     """
-    df_con = find_files_with_common_name(path_results_con, arguments.connectivity_type)
-    df_clbp = find_files_with_common_name(path_results_clbp, arguments.connectivity_type)
-    ### work only on one session at a time
-    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
-    df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
-    df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
-    df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
-    df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
-    # ### Fetch graph theory metrics data
-    # centrality_clbp_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v1_scilpy(all).csv', index_col=['subject', 'roi'])
-    # centrality_con_v1 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v1_scilpy(all).csv', index_col=['subject', 'roi'])
-    # centrality_clbp_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v2_scilpy(all).csv', index_col=['subject', 'roi'])
-    # centrality_con_v2 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v2_scilpy(all).csv', index_col=['subject', 'roi'])
-    # centrality_clbp_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/clbp/clbp_v3_scilpy(all).csv', index_col=['subject', 'roi'])
-    # centrality_con_v3 = pd.read_csv('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/degree_centrality/bct/control/con_v3_scilpy(all).csv', index_col=['subject', 'roi'])
-
-    """
-    Prepare data for analysis
-    """
-    ### Select data and filters to apply
-    # df_clean_clbp_v1 = data_processor(df_clbp_v1, session='all', condition='clbp', filter='scilpy', clean=True)
-    # df_clean_con_v1 = data_processor(df_con_v1, session='all', condition='con', filter='scilpy', clean=True)
-    # df_clean_clbp_v2 = data_processor(df_clbp_v2, session='all', condition='clbp', filter='scilpy', clean=True)
-    # df_clean_con_v2 = data_processor(df_con_v2, session='all', condition='con', filter='scilpy', clean=True)
-    # df_clean_clbp_v3 = data_processor(df_clbp_v3, session='all', condition='clbp', filter='scilpy', clean=True)
-    # df_clean_con_v3 = data_processor(df_con_v3, session='all', condition='con', filter='scilpy', clean=True)
+    # df_con = find_files_with_common_name(path_results_con, arguments.connectivity_type)
+    # df_clbp = find_files_with_common_name(path_results_clbp, arguments.connectivity_type)
+    # ### work only on one session at a time
+    # df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
+    # df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
+    # df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
+    # df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
+    # df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
+    # df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
     
-    ## Work on a single subject. For testing purposes
-    # sub_007_clean = df_clean_clbp_v1.loc['sub-pl007', :]
-    # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/sub_007_clean.txt', sub_007_clean.to_numpy().flatten())
+    ### Fetch graph theory metrics data
+    gtm_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics_con.csv', index_col=['subject', 'roi'])
+    gtm_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics.csv', index_col=['subject', 'roi'])
+    
+    gtm_limb_con = limbic_system_filter(gtm_con)
+    gtm_limb_clbp = limbic_system_filter(gtm_clbp)
     
     """
     Calculate z-score of chosen metric
