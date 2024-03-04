@@ -137,7 +137,7 @@ def paired_t_test(df_v1, df_v2):
     np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/t_test_results.txt', df_t_test_results['t_statistic'], fmt='%1.5f')
     return df_t_test_results
 
-def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
+def friedman_old(df_centrality_v1, df_centrality_v2, df_centrality_v3):
     """
     Calculates friedman test (non-parametric repeated measures ANOVA) to measure variability
     of centrality metrics at different time points
@@ -176,6 +176,71 @@ def friedman(df_centrality_v1, df_centrality_v2, df_centrality_v3):
     df_results_pval.set_index('roi', inplace=True)
 
     return df_results_stats, df_results_pval
+
+def friedman(df, roi_column=None, metric_column='centrality'):
+    """
+    Calculates friedman test (non-parametric repeated measures ANOVA) to measure variability
+    of centrality metrics at different time points
+
+    Parameters
+    ----------
+    df_centrality_v1 : (1, SxN) pandas DataFrame
+        DataFrame containing centrality data for version 1.
+    df_centrality_v2 : (1, SxN) pandas DataFrame
+        DataFrame containing centrality data for version 2.
+    df_centrality_v3 : (1, SxN) pandas DataFrame
+        DataFrame containing centrality data for version 3.
+    roi_column: str, optional
+        The name of the column in the dataframes containing the ROI labels.
+        If None, the dataframes are assumed to have a flat structure without ROI grouping.
+    centrality_column : str, optional
+        The name of the column in the dataframes containing the centrality values. Default is 'centrality'.
+
+    Returns
+    -------
+    stat : float
+        The test statistic.
+    pval : float
+        The p-value associated with the test statistic.
+    """
+    results_statistics = []
+    results_pval = []
+    metric_data_v1 = df[df['visit'] == 1][metric_column]
+    metric_data_v2 = df[df['visit'] == 2][metric_column]
+    metric_data_v3 = df[df['visit'] == 3][metric_column]
+
+    if roi_column is not None: 
+        unique_rois = df.index.get_level_values(roi_column).unique()
+
+        for roi in unique_rois:
+            roi_data_v1 = metric_data_v1.loc[metric_data_v1.index.get_level_values(roi_column) == roi, metric_column].values
+            roi_data_v2 = metric_data_v2.loc[metric_data_v2.index.get_level_values(roi_column) == roi, metric_column].values
+            roi_data_v3 = metric_data_v3.loc[metric_data_v3.index.get_level_values(roi_column) == roi, metric_column].values
+
+            result = stats.friedmanchisquare(roi_data_v1, roi_data_v2, roi_data_v3)
+            results_statistics.append({'roi': roi, 'statistic': result.statistic})
+            results_pval.append({'roi': roi, 'p_value': result.pvalue})
+
+        # Create DataFrames to store the results
+        df_results_stats = pd.DataFrame(results_statistics)
+        df_results_stats.set_index('roi', inplace=True)
+        df_results_pval = pd.DataFrame(results_pval)
+        df_results_pval.set_index('roi', inplace=True)
+    
+    else:
+        metric_data_v1.values
+        metric_data_v2.values
+        metric_data_v3.values
+        result = stats.friedmanchisquare(metric_data_v1, metric_data_v2, metric_data_v3)
+        results_statistics.append({'statistic': result.statistic})
+        results_pval.append({'p_value': result.pvalue})
+
+        # Create DataFrames to store the results
+        df_results_stats = pd.DataFrame(results_statistics)
+        df_results_pval = pd.DataFrame(results_pval)
+
+    return df_results_stats, df_results_pval
+
     
 def icc(df_clean_centrality_v1, df_clean_centrality_v2, df_clean_centrality_v3):
     """
