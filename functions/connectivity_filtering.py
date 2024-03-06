@@ -25,7 +25,7 @@ from netneurotools.utils import get_centroids
 from netneurotools.networks import threshold_network, struct_consensus
 from scipy.spatial.distance import squareform, pdist
 
-def load_brainnetome_centroids(image="/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all.nii.gz"):
+def load_brainnetome_centroids(image="/Users/Marc-Antoine/Documents/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all.nii.gz"):
     """
     Loads Euclidean coordinates of nodes
     Parameters
@@ -136,7 +136,7 @@ def threshold_filter(df_connectivity_matrix, print_density=True):
     #df_mean_matrix[df_mean_matrix < 1] = 0
     #return df_mean_matrix
 
-def scilpy_filter(df_connectivity_matrix, session, print_density=True):
+def scilpy_filter(df_connectivity_matrix, session, print_density=False):
     """
     Each edge with a value of 1 represents an edge with at least 90% of the population having at least 1 streamline
     and at least 90% of the population having at least 20mm of average streamlines length. 
@@ -308,7 +308,7 @@ def pain_duration_filter(df_connectivity_matrix, category='2'):
 
 def limbic_system_filter(df_connectivity_matrix):
     df_filtered = df_connectivity_matrix.loc[df_connectivity_matrix.index.get_level_values('roi').isin([175,176,177,178,179,180,181,182,183,184,185,186,187,188,211,216,217,218,219,223,224,225])]
-    df_filtered.index.names = ['subject','label']
+    df_filtered.index.names = ['subject','label', 'visit']
     df_filtered.rename(index={175: 'CG_L_7_1',176: 'CG_R_7_1',177: 'CG_L_7_2',178: 'CG_R_7_2',179: 'CG_L_7_3',180: 'CG_R_7_3',181: 'CG_L_7_4',182: 'CG_R_7_4',
                               183: 'CG_L_7_5',184: 'CG_R_7_5',185: 'CG_L_7_6',186: 'CG_R_7_6',187: 'CG_L_7_7',188: 'CG_R_7_7',211: 'Tha_L',216: 'Hipp_L',
                               217: 'Amyg_L',218: 'Accum_L',219: 'Tha_R',223: 'Hipp_R',224: 'Amyg_R',225: 'Accum_R'},

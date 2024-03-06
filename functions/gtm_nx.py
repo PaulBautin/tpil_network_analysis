@@ -37,7 +37,7 @@ from functions.connectivity_filtering import distance_dependant_filter
 from functions.connectivity_stats import mean_matrix, z_score
 
 
-def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
+def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric=None):
     """
     Creates a networkx graph with nodes varying in color based on degree centrality of each nodes
 
@@ -50,12 +50,7 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
     -------
     Networkx graph
     """
-    # Validate input
-    valid_metrics = ['zscore', 'friedman']
-    if metric not in valid_metrics:
-        print("Invalid metric. Valid metrics:", valid_metrics)
-        return None
-    # specify graph parameters according to metric
+    
     if metric == 'zscore':
         node_color = df_weighted_nodes
         node_color = (node_color.sort_index())
@@ -63,15 +58,22 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
         node_color_values = node_color['centrality']
         vmin = -2
         vmax = 2
-    if metric == 'friedman':
+    elif metric == 'friedman':
         node_color = df_weighted_nodes
         node_color = (node_color.sort_index())
         print(node_color)
         node_color_values = node_color['statistic']
         vmin = 2
         vmax = 8
+    else:
+        node_color = df_weighted_nodes
+        node_color = (node_color.sort_index())
+        print(node_color)
+        node_color_values = node_color['statistic']
+        vmin = np.min(df_connectivity_matrix.values)
+        vmax = np.max(df_connectivity_matrix.values)
     # read the labels from the .txt file
-    with open('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all_atlas.txt', 'r') as labels_file:
+    with open('/Users/Marc-Antoine/Documents/tpil_network_analysis/labels/sub-pl007_ses-v1__nativepro_seg_all_atlas.txt', 'r') as labels_file:
         labels = [line.strip() for line in labels_file]
     # load the node centroids using the provided function
     coordinates_array = load_brainnetome_centroids()
@@ -94,9 +96,7 @@ def networkx_graph_convertor(df_connectivity_matrix, df_weighted_nodes, metric):
             if weight != 0:
                 # add the weighted edge between nodes with the weight from the NumPy array
                 G.add_edge(i, j, weight=weight)
-    # graph according to node position and color intensity
-    node_color = df_weighted_nodes
-    node_color = (node_color.sort_index())
+    node_color_values = [colormap((value - vmin) / (vmax - vmin)) if value != 0 else 'lightgray' for value in node_color_values]
     nx.draw_networkx(G, pos=dict_coords, labels=dict_labels, node_color=node_color_values, cmap=colormap, vmin=vmin, vmax=vmax, with_labels=False)
     #set colorbar
     cbar = plt.colorbar(cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=colormap))

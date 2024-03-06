@@ -29,6 +29,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as colors
+import plotly.express as px
 import glob
 import bct
 import networkx as nx
@@ -58,13 +59,13 @@ def get_parser():
         "-clbp",
         required=True,
         default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
+        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp")',
     )
     mandatory.add_argument(
         "-con",
         required=True,
         default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
+        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control")',
     )
     mandatory.add_argument(
         "-connectivity_type",
@@ -89,35 +90,42 @@ def main():
     """
     main function, gather stats and call plots
     """
-    # ### Get parser elements
-    # parser = get_parser()
-    # arguments = parser.parse_args()
-    # path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
-    # path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
-    # path_output = os.path.abspath(arguments.o)
+    ### Get parser elements
+    parser = get_parser()
+    arguments = parser.parse_args()
+    path_results_con = os.path.abspath(os.path.expanduser(arguments.con))
+    path_results_clbp = os.path.abspath(os.path.expanduser(arguments.clbp))
+    path_output = os.path.abspath(arguments.o)
     
     """ 
     Get connectivity data
     """
-    # df_con = find_files_with_common_name(path_results_con, arguments.connectivity_type)
-    # df_clbp = find_files_with_common_name(path_results_clbp, arguments.connectivity_type)
-    # ### work only on one session at a time
-    # df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
-    # df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
-    # df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
-    # df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
-    # df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
-    # df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
+    df_con = find_files_with_common_name(path_results_con, arguments.connectivity_type)
+    df_clbp = find_files_with_common_name(path_results_clbp, arguments.connectivity_type)
+    ### work only on one session at a time
+    df_con_v1 = df_con[df_con['session'] == "v1"].drop("session", axis=1)
+    df_clbp_v1 = df_clbp[df_clbp['session'] == "v1"].drop("session", axis=1)
+    df_con_v2 = df_con[df_con['session'] == "v2"].drop("session", axis=1)
+    df_clbp_v2 = df_clbp[df_clbp['session'] == "v2"].drop("session", axis=1)
+    df_con_v3 = df_con[df_con['session'] == "v3"].drop("session", axis=1)
+    df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
     
     ### Fetch graph theory metrics data
-    gtm_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics_con.csv', index_col=['subject', 'roi'])
-    gtm_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics.csv', index_col=['subject', 'roi'])
+    gtm_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics_con.csv', index_col=['subject', 'roi', 'visit'])
+    gtm_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics.csv', index_col=['subject', 'roi', 'visit'])
     
     gtm_limb_con = limbic_system_filter(gtm_con)
     gtm_limb_clbp = limbic_system_filter(gtm_clbp)
-
+    
     gtm_global_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_global_metrics_con.csv', index_col=['subject'])
     gtm_global_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_global_metrics.csv', index_col=['subject'])
+    
+    sub_pl007_degree_visit_1 = gtm_clbp.loc[('sub-pl007', slice(None), 1), 'degree']
+    sub_pl007_degree_visit_1 = sub_pl007_degree_visit_1.rename('statistic')
+    
+    mask = ~sub_pl007_degree_visit_1.index.get_level_values('roi').isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
+    sub_pl007_degree_visit_1 = sub_pl007_degree_visit_1.reset_index()
+    sub_pl007_degree_visit_1.loc[mask, 'statistic'] = 0
     
     """
     Calculate z-score of chosen metric
@@ -135,127 +143,16 @@ def main():
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/z_score_v2.txt', z_score_v2.to_numpy().flatten())
     # np.savetxt('/home/mafor/dev_tpil/tpil_networks/tpil_network_analysis/results/strength_centrality/bct/z_score_v3.txt', z_score_v3.to_numpy().flatten())
 
-    # """
-    # Perform Friedman test of chosen metric 
-    # """
-    # ### Calculate Friedman test for degree
+    """
+    Perform Friedman test of chosen metric 
+    """
+    ### Calculate Friedman test for degree
     # stat_con_d, pval_con_d = friedman(gtm_con, roi_column='roi', metric_column='degree')
-    # degree_con = pd.concat([stat_con_d, pval_con_d], axis=1)
-    # degree_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/degree_con.csv')
     # stat_clbp_d, pval_clbp_d = friedman(gtm_clbp, roi_column='roi', metric_column='degree')
-    # degree_clbp = pd.concat([stat_clbp_d, pval_clbp_d], axis=1)
-    # degree_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/degree_clbp.csv')
-    # ### Calculate Friedman test for strength
-    # stat_con_s, pval_con_s = friedman(gtm_con, roi_column='roi', metric_column='strength')
-    # strength_con = pd.concat([stat_con_s, pval_con_s], axis=1)
-    # strength_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/strength_con.csv')
-    # stat_clbp_s, pval_clbp_s = friedman(gtm_clbp, roi_column='roi', metric_column='strength')
-    # strength_clbp = pd.concat([stat_clbp_s, pval_clbp_s], axis=1)
-    # strength_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/strength_clbp.csv')
-    # ### Calculate Friedman test for betweenness
-    # stat_con_b, pval_con_b = friedman(gtm_con, roi_column='roi', metric_column='betweenness')
-    # betweenness_con = pd.concat([stat_con_b, pval_con_b], axis=1)
-    # betweenness_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/betweenness_con.csv')
-    # stat_clbp_b, pval_clbp_b = friedman(gtm_clbp, roi_column='roi', metric_column='betweenness')
-    # betweenness_clbp = pd.concat([stat_clbp_b, pval_clbp_b], axis=1)
-    # betweenness_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/betweenness_clbp.csv')
-    # ### Calculate Friedman test for cluster
-    # stat_con_c, pval_con_c = friedman(gtm_con, roi_column='roi', metric_column='cluster')
-    # cluster_con = pd.concat([stat_con_c, pval_con_c], axis=1)
-    # cluster_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/cluster_con.csv')
-    # stat_clbp_c, pval_clbp_c = friedman(gtm_clbp, roi_column='roi', metric_column='cluster')
-    # cluster_clbp = pd.concat([stat_clbp_c, pval_clbp_c], axis=1)
-    # cluster_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/cluster_clbp.csv')
-    # ### Calculate Friedman test for efficiency
-    # stat_con_e, pval_con_e = friedman(gtm_con, roi_column='roi', metric_column='efficiency')
-    # efficiency_con = pd.concat([stat_con_e, pval_con_e], axis=1)
-    # efficiency_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/efficiency_con.csv')
-    # stat_clbp_e, pval_clbp_e = friedman(gtm_clbp, roi_column='roi', metric_column='efficiency')
-    # efficiency_clbp = pd.concat([stat_clbp_e, pval_clbp_e], axis=1)
-    # efficiency_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/local/efficiency_clbp.csv')
     
-    # """
-    # Perform Friedman test of chosen metric for limbic system
-    # """
-    # ### Calculate Friedman test for degree
-    # stat_con_d, pval_con_d = friedman(gtm_limb_con, roi_column='label', metric_column='degree')
-    # degree_con = pd.concat([stat_con_d, pval_con_d], axis=1)
-    # degree_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/degree_con.csv')
-    # stat_clbp_d, pval_clbp_d = friedman(gtm_limb_clbp, roi_column='label', metric_column='degree')
-    # degree_clbp = pd.concat([stat_clbp_d, pval_clbp_d], axis=1)
-    # degree_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/degree_clbp.csv')
-    # ### Calculate Friedman test for strength
-    # stat_con_s, pval_con_s = friedman(gtm_limb_con, roi_column='label', metric_column='strength')
-    # strength_con = pd.concat([stat_con_s, pval_con_s], axis=1)
-    # strength_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/strength_con.csv')
-    # stat_clbp_s, pval_clbp_s = friedman(gtm_limb_clbp, roi_column='label', metric_column='strength')
-    # strength_clbp = pd.concat([stat_clbp_s, pval_clbp_s], axis=1)
-    # strength_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/strength_clbp.csv')
-    # ### Calculate Friedman test for betweenness
-    # stat_con_b, pval_con_b = friedman(gtm_limb_con, roi_column='label', metric_column='betweenness')
-    # betweenness_con = pd.concat([stat_con_b, pval_con_b], axis=1)
-    # betweenness_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/betweenness_con.csv')
-    # stat_clbp_b, pval_clbp_b = friedman(gtm_limb_clbp, roi_column='label', metric_column='betweenness')
-    # betweenness_clbp = pd.concat([stat_clbp_b, pval_clbp_b], axis=1)
-    # betweenness_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/betweenness_clbp.csv')
-    # ### Calculate Friedman test for cluster
-    # stat_con_c, pval_con_c = friedman(gtm_limb_con, roi_column='label', metric_column='cluster')
-    # cluster_con = pd.concat([stat_con_c, pval_con_c], axis=1)
-    # cluster_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/cluster_con.csv')
-    # stat_clbp_c, pval_clbp_c = friedman(gtm_limb_clbp, roi_column='label', metric_column='cluster')
-    # cluster_clbp = pd.concat([stat_clbp_c, pval_clbp_c], axis=1)
-    # cluster_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/cluster_clbp.csv')
-    # ### Calculate Friedman test for efficiency
-    # stat_con_e, pval_con_e = friedman(gtm_limb_con, roi_column='label', metric_column='efficiency')
-    # efficiency_con = pd.concat([stat_con_e, pval_con_e], axis=1)
-    # efficiency_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/efficiency_con.csv')
-    # stat_clbp_e, pval_clbp_e = friedman(gtm_limb_clbp, roi_column='label', metric_column='efficiency')
-    # efficiency_clbp = pd.concat([stat_clbp_e, pval_clbp_e], axis=1)
-    # efficiency_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/limbic/efficiency_clbp.csv')
-
-    """
-    Perform Friedman test of chosen metric for global metrics
-    """
-    ### Calculate Friedman test for efficiency
-    stat_con_e, pval_con_e = friedman(gtm_global_con, roi_column=None, metric_column='efficiency')
-    efficiency_con = pd.concat([stat_con_e, pval_con_e], axis=1)
-    efficiency_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/efficiency_con.csv')
-    stat_clbp_e, pval_clbp_e = friedman(gtm_global_clbp, roi_column=None, metric_column='efficiency')
-    efficiency_clbp = pd.concat([stat_clbp_e, pval_clbp_e], axis=1)
-    efficiency_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/efficiency_clbp.csv')
-    ## Calculate Friedman test for strength
-    stat_con_s, pval_con_s = friedman(gtm_global_con, roi_column=None, metric_column='strength')
-    strength_con = pd.concat([stat_con_s, pval_con_s], axis=1)
-    strength_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/strength_con.csv')
-    stat_clbp_s, pval_clbp_s = friedman(gtm_global_clbp, roi_column=None, metric_column='strength')
-    strength_clbp = pd.concat([stat_clbp_s, pval_clbp_s], axis=1)
-    strength_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/strength_clbp.csv')
-    ### Calculate Friedman test for cluster
-    stat_con_c, pval_con_c = friedman(gtm_global_con, roi_column=None, metric_column='cluster')
-    cluster_con = pd.concat([stat_con_c, pval_con_c], axis=1)
-    cluster_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/cluster_con.csv')
-    stat_clbp_c, pval_clbp_c = friedman(gtm_global_clbp, roi_column=None, metric_column='cluster')
-    cluster_clbp = pd.concat([stat_clbp_c, pval_clbp_c], axis=1)
-    cluster_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/cluster_clbp.csv')
-    ### Calculate Friedman test for small_world
-    stat_con_sw, pval_con_sw = friedman(gtm_global_con, roi_column=None, metric_column='small_world')
-    small_world_con = pd.concat([stat_con_sw, pval_con_sw], axis=1)
-    small_world_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/small_world_con.csv')
-    stat_clbp_sw, pval_clbp_sw = friedman(gtm_global_clbp, roi_column=None, metric_column='small_world')
-    small_world_clbp = pd.concat([stat_clbp_sw, pval_clbp_sw], axis=1)
-    small_world_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/small_world_clbp.csv')
-    ### Calculate Friedman test for modularity
-    stat_con_m, pval_con_m = friedman(gtm_global_con, roi_column=None, metric_column='modularity')
-    modularity_con = pd.concat([stat_con_m, pval_con_m], axis=1)
-    modularity_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/modularity_con.csv')
-    stat_clbp_m, pval_clbp_m = friedman(gtm_global_clbp, roi_column=None, metric_column='modularity')
-    modularity_clbp = pd.concat([stat_clbp_m, pval_clbp_m], axis=1)
-    modularity_clbp.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/modularity_clbp.csv')
-
     """
     Calculate the ICC of chosen metric
     """
-    
     ### Calculate ICC
     # results_my_icc = my_icc(small_world_v1, small_world_v2, small_world_v3)
     # results_icc = calculate_icc_all_rois(df_age, metric='Score_POQ_total')
@@ -264,9 +161,13 @@ def main():
     Graph nodes of chosen network
     """  
     ### Obtain connectivity matrix to graph edges
-    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    # df_mean_filter = mean_matrix(mask_clbp_commit2_v1)
-    # networkx_graph_convertor(df_mean_filter, stat_clbp, 'friedman')
+    mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    df_mean_filter = mean_matrix(mask_clbp_commit2_v1)
+    
+    select_rows = ~df_mean_filter.index.isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
+    select_cols = ~df_mean_filter.columns.isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
+    df_mean_filter.loc[select_rows, select_cols] = 0
+    networkx_graph_convertor(df_mean_filter, sub_pl007_degree_visit_1)
     # networkx_graph_convertor(df_mean_filter, stat_con, 'friedman')
     # networkx_graph_convertor(df_mean_filter, z_score_v1, 'zscore')
     # networkx_graph_convertor(df_mean_filter, z_score_v2, 'zscore')

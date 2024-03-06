@@ -35,7 +35,7 @@
 # Create design contrast: contrast.txt
 # Ex: if Group A = CLBP and Group B = CON
 # 1 -1      # C1 A > B
-# 1 -1      # C2 B > A
+# -1 1      # C2 B > A
 # 1 0      # Mean A
 # 0 1      # Mean B
 #Text2Vest design.txt design.mat
