@@ -36,47 +36,6 @@ from functions.connectivity_read_files import find_files_with_common_name
 from functions.connectivity_stats import mean_matrix, z_score, friedman, nbs_data, my_icc, icc, calculate_icc_all_rois, calculate_cv
 from functions.gtm_nx import networkx_graph_convertor
 
-
-def get_parser():
-    """parser function"""
-    parser = argparse.ArgumentParser(
-        description="Compute statistics based on the .csv files containing the tractometry metrics:",
-        formatter_class=argparse.RawTextHelpFormatter,
-        prog=os.path.basename(__file__).strip(".py")
-    )
-
-    mandatory = parser.add_argument_group("\nMANDATORY ARGUMENTS")
-    mandatory.add_argument(
-        "-clbp",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/clbp/sub-pl007_ses-v1/Compute_Connectivity")',
-    )
-    mandatory.add_argument(
-        "-con",
-        required=True,
-        default='connectivity_results',
-        help='Path to folder that contains output .csv files (e.g. "~/dev_tpil/tpil_network_analysis/data/22-11-16_connectoflow/control/sub-pl029_ses-v1/Compute_Connectivity")',
-    )
-    mandatory.add_argument(
-        "-connectivity_type",
-        required=True,
-        default='connectivity_results',
-        help='type of connectivity data to work with (e.g. "commit2_weights.csv")',
-    )
-    optional = parser.add_argument_group("\nOPTIONAL ARGUMENTS")
-    optional.add_argument(
-        '-fig',
-        help='Generate figures',
-        action='store_true'
-    )
-    optional.add_argument(
-        '-o',
-        help='Path where figures will be saved. By default, they will be saved in the current directory.',
-        default="."
-    )
-    return parser
-
 def main():
     """
     main function, gather stats and call plots
@@ -102,14 +61,14 @@ def main():
     # df_clbp_v3 = df_clbp[df_clbp['session'] == "v3"].drop("session", axis=1)
     
     ### Fetch graph theory metrics data
-    gtm_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics_con.csv', index_col=['subject', 'roi'])
-    gtm_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics.csv', index_col=['subject', 'roi'])
-    
-    gtm_limb_con = limbic_system_filter(gtm_con)
-    gtm_limb_clbp = limbic_system_filter(gtm_clbp)
+    gtm_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_nodal_metrics_con.csv', index_col=['subject', 'roi'])
+    gtm_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_nodal_metrics_clbp.csv', index_col=['subject', 'roi'])
+   
+    gtm_limb_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_limbic_metrics_con.csv', index_col=['subject', 'label'])
+    gtm_limb_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_limbic_metrics_clbp.csv', index_col=['subject', 'label'])
 
     gtm_global_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_global_metrics_con.csv', index_col=['subject'])
-    gtm_global_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_global_metrics.csv', index_col=['subject'])
+    gtm_global_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_global_metrics_clbp.csv', index_col=['subject'])
     
 
     """
@@ -193,7 +152,7 @@ def main():
     """
     Perform Friedman test of chosen metric for global metrics
     """
-    ### Calculate Friedman test for efficiency
+    ## Calculate Friedman test for efficiency
     stat_con_e, pval_con_e = friedman(gtm_global_con, roi_column=None, metric_column='efficiency')
     efficiency_con = pd.concat([stat_con_e, pval_con_e], axis=1)
     efficiency_con.to_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/friedman/global/efficiency_con.csv')
@@ -236,3 +195,6 @@ def main():
     ### Calculate ICC
     # results_my_icc = my_icc(small_world_v1, small_world_v2, small_world_v3)
     # results_icc = calculate_icc_all_rois(df_age, metric='Score_POQ_total')
+
+if __name__ == "__main__":
+    main()

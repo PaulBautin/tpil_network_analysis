@@ -205,9 +205,10 @@ def friedman(df, roi_column=None, metric_column='centrality'):
     """
     results_statistics = []
     results_pval = []
-    metric_data_v1 = df[df['visit'] == 1][metric_column]
-    metric_data_v2 = df[df['visit'] == 2][metric_column]
-    metric_data_v3 = df[df['visit'] == 3][metric_column]
+    metric_data_v1 = df[df['visit'] == 1][[metric_column]]
+    metric_data_v2 = df[df['visit'] == 2][[metric_column]]
+    metric_data_v3 = df[df['visit'] == 3][[metric_column]]
+    
 
     if roi_column is not None: 
         unique_rois = df.index.get_level_values(roi_column).unique()
@@ -373,3 +374,19 @@ def calculate_icc_all_rois(dataframe, metric='metric'):
 
     print(f"Intraclass correlation coefficient for {metric}:\n{result}")
     return result
+
+def rank_roi(df):
+    # Calculate rank for each ROI for each column
+    rank_df = df.rank(axis=0, method='min')
+
+    df_mean = rank_df.mean(axis=1)  # Calculate mean value for each ROI
+    df_cv = rank_df.std(axis=1) / rank_df.mean(axis=1)  # Calculate coefficient of variation for each ROI
+    
+    # Rearrange ROIs based on minimum rank value
+    sorted_rois = df_mean.sort_values().index
+    
+    rank_df_sorted = rank_df.loc[sorted_rois]
+    df_mean_sorted = df_mean.loc[sorted_rois]
+    df_cv_sorted = df_cv.loc[sorted_rois]
+    
+    return rank_df_sorted, df_mean_sorted, df_cv_sorted

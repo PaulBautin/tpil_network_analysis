@@ -307,10 +307,10 @@ def pain_duration_filter(df_connectivity_matrix, category='2'):
     return df_cleaned
 
 def limbic_system_filter(df_connectivity_matrix):
-    df_filtered = df_connectivity_matrix.loc[df_connectivity_matrix.index.get_level_values('roi').isin([175,176,177,178,179,180,181,182,183,184,185,186,187,188,211,216,217,218,219,223,224,225])]
+    df_filtered = df_connectivity_matrix.loc[df_connectivity_matrix.index.get_level_values('roi').isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])]
     df_filtered.index.names = ['subject','label', 'visit']
-    df_filtered.rename(index={175: 'CG_L_7_1',176: 'CG_R_7_1',177: 'CG_L_7_2',178: 'CG_R_7_2',179: 'CG_L_7_3',180: 'CG_R_7_3',181: 'CG_L_7_4',182: 'CG_R_7_4',
-                              183: 'CG_L_7_5',184: 'CG_R_7_5',185: 'CG_L_7_6',186: 'CG_R_7_6',187: 'CG_L_7_7',188: 'CG_R_7_7',211: 'Tha_L',216: 'Hipp_L',
-                              217: 'Amyg_L',218: 'Accum_L',219: 'Tha_R',223: 'Hipp_R',224: 'Amyg_R',225: 'Accum_R'},
+    df_filtered.rename(index={174: 'CG_L_7_1',175: 'CG_R_7_1',176: 'CG_L_7_2',177: 'CG_R_7_2',178: 'CG_L_7_3',179: 'CG_R_7_3',180: 'CG_L_7_4',181: 'CG_R_7_4',
+                              182: 'CG_L_7_5',183: 'CG_R_7_5',184: 'CG_L_7_6',185: 'CG_R_7_6',186: 'CG_L_7_7',187: 'CG_R_7_7',210: 'Tha_L',215: 'Hipp_L',
+                              216: 'Amyg_L',217: 'Accum_L',218: 'Tha_R',222: 'Hipp_R',223: 'Amyg_R',224: 'Accum_R'},
                               level='label', inplace=True)
     return df_filtered

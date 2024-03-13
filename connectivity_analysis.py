@@ -114,18 +114,17 @@ def main():
     gtm_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics_con.csv', index_col=['subject', 'roi', 'visit'])
     gtm_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_metrics.csv', index_col=['subject', 'roi', 'visit'])
     
-    gtm_limb_con = limbic_system_filter(gtm_con)
-    gtm_limb_clbp = limbic_system_filter(gtm_clbp)
-    
     gtm_global_con = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_global_metrics_con.csv', index_col=['subject'])
     gtm_global_clbp = pd.read_csv('/Users/Marc-Antoine/Documents/tpil_network_analysis/results/gtm_global_metrics.csv', index_col=['subject'])
     
-    sub_pl007_degree_visit_1 = gtm_clbp.loc[('sub-pl007', slice(None), 1), 'degree']
-    sub_pl007_degree_visit_1 = sub_pl007_degree_visit_1.rename('statistic')
+    # sub_pl007 = df_clbp_v1[df_clbp_v1['subject'] == 'sub-pl007']
+    # filter_007 = scilpy_filter(sub_pl007, 'all')
+    # sub_pl007_degree_visit_1 = gtm_clbp.loc[('sub-pl007', slice(None), 1), 'degree']
+    # sub_pl007_degree_visit_1 = sub_pl007_degree_visit_1.rename('statistic')
     
-    mask = ~sub_pl007_degree_visit_1.index.get_level_values('roi').isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
-    sub_pl007_degree_visit_1 = sub_pl007_degree_visit_1.reset_index()
-    sub_pl007_degree_visit_1.loc[mask, 'statistic'] = 0
+    # mask = ~sub_pl007_degree_visit_1.index.get_level_values('roi').isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
+    # sub_pl007_degree_visit_1 = sub_pl007_degree_visit_1.reset_index()
+    # sub_pl007_degree_visit_1.loc[mask, 'statistic'] = 0
     
     """
     Calculate z-score of chosen metric
@@ -161,13 +160,12 @@ def main():
     Graph nodes of chosen network
     """  
     ### Obtain connectivity matrix to graph edges
-    mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
-    df_mean_filter = mean_matrix(mask_clbp_commit2_v1)
-    
-    select_rows = ~df_mean_filter.index.isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
-    select_cols = ~df_mean_filter.columns.isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
-    df_mean_filter.loc[select_rows, select_cols] = 0
-    networkx_graph_convertor(df_mean_filter, sub_pl007_degree_visit_1)
+    # mask_clbp_commit2_v1 = df_clbp_v1.groupby('subject').apply(lambda x:scilpy_filter(x, 'all'))
+    # df_mean_filter = mean_matrix(mask_clbp_commit2_v1)
+    # select_rows = ~df_mean_filter.index.isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
+    # select_cols = ~df_mean_filter.columns.isin([174,175,176,177,178,179,180,181,182,183,184,185,186,187,210,215,216,217,218,222,223,224])
+    # df_mean_filter.loc[select_rows, select_cols] = 0
+    # networkx_graph_convertor(df_mean_filter, sub_pl007_degree_visit_1)
     # networkx_graph_convertor(df_mean_filter, stat_con, 'friedman')
     # networkx_graph_convertor(df_mean_filter, z_score_v1, 'zscore')
     # networkx_graph_convertor(df_mean_filter, z_score_v2, 'zscore')
